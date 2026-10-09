@@ -207,19 +207,24 @@ footer { color: var(--muted); font-size: 13px; }
 
 <script type="module">
 // ---- engine.mjs
-// Blackjack engine: the shoe, the rules, the Hi-Lo count and one round at a time. Plain ES modules, no dependencies, so
-// the same file runs in the browser and under node for the tests.
+// Blackjack engine: the shoe, the rules, the Hi-Lo count and one round at a table of one or more seats. Plain ES
+// modules, no dependencies, so the same file runs in the browser and under node for the tests.
 
 /** The table's rules. Every one is a setting in the app; these are the defaults. */
 const RULES = Object.freeze({
   decks: 6,            // decks in the shoe
   hitSoft17: false,    // false: the dealer stands on soft 17 (S17); true: hits it (H17)
-  blackjackPays: 1.5,  // 3:2; 6:5 is 1.2
+  blackjackPays: 1.5,  // 3:2; 6:5 is 1.2, even money 1
   das: true,           // double after split
+  doubleOn: "any",     // which first two cards may double: "any", "9-11" or "10-11"
   lateSurrender: true, // give up half the bet on the first two cards, after the dealer checks for blackjack
-  maxHands: 4,         // splitting up to four hands
+  maxHands: 4,         // splitting up to this many hands
   hitSplitAces: false, // split aces get one card each
+  resplitAces: false,  // a split ace dealt another ace may be split again
+  holeCard: true,      // the dealer takes a second card face down and peeks for blackjack; false is the European
+                       // no-hole-card game, where a dealer blackjack takes every bet on the table, doubles and splits too
   penetration: 0.75,   // the cut card: the share of the shoe dealt before a reshuffle
+  csm: false,          // a continuous shuffler: every card goes back in after each round
 });
 
 const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
@@ -239,8 +244,10 @@ function handTotal(cards) {
 }
 /** Two cards making 21. A split hand's 21 is not a blackjack. */
 const isBlackjack = (cards, fromSplit = false) => !fromSplit && cards.length === 2 && handTotal(cards).total === 21;
+/** Whether the rules let a first-two-card total double. */
+const canDoubleTotal = (total, rules = RULES) => rules.doubleOn === "9-11" ? total >= 9 && total <= 11 : rules.doubleOn === "10-11" ? total >= 10 && total <= 11 : true;
 
-/** A small seeded random number generator, for repeatable shoes in tests and drills. */
+/** A small seeded random number generator, for repeatable shoes in tests, drills and simulations. */
 function mulberry32(seed) {
   let a = seed >>> 0;
   return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -254,30 +261,38 @@ function cryptoRandom() {
 
 /**
  * The shoe: `decks` decks shuffled together (Fisher-Yates), dealt from the top, reshuffled once the cut card comes out.
- * `stack` deals a fixed order instead (tests and drills), then carries on from a shuffled shoe.
+ * `stack` deals a fixed order instead (tests and drills), then carries on from a shuffled shoe. `infinite` draws every
+ * card from a fresh deck, so every rank is always 1 in 13: the deck the strategy is worked out for.
  */
 class Shoe {
-  constructor({ decks = RULES.decks, penetration = RULES.penetration, rng = cryptoRandom(), stack = null } = {}) {
-    this.decks = decks; this.penetration = penetration; this.rng = rng; this.stack = stack ? stack.map((r) => (typeof r === "string" ? { rank: r, suit: "S" } : r)) : null;
+  constructor({ decks = RULES.decks, penetration = RULES.penetration, rng = cryptoRandom(), stack = null, infinite = false } = {}) {
+    this.decks = decks; this.penetration = penetration; this.rng = rng; this.infinite = infinite;
+    this.stack = stack ? stack.map((r) => (typeof r === "string" ? { rank: r, suit: "S" } : r)) : null;
     this.shuffle();
   }
   shuffle() {
     const cards = []; for (let d = 0; d < this.decks; d++) for (const suit of SUITS) for (const rank of RANKS) cards.push({ rank, suit });
     for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(this.rng() * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; }
-    if (this.stack) { cards.splice(0, this.stack.length, ...this.stack); this.stack = null; } // a stacked top, the rest shuffled (counts no longer balance to zero)
+    if (this.stack) { cards.splice(0, this.stack.length, ...this.stack); if (this.infinite) this.stacked = this.stack.length; this.stack = null; } // a stacked top, the rest shuffled (counts no longer balance to zero)
     this.cards = cards; this.next = 0; this.cut = Math.round(cards.length * this.penetration); this.runningCount = 0; this.shuffles = (this.shuffles ?? -1) + 1;
   }
   get size() { return this.cards.length; }
-  get left() { return this.cards.length - this.next; }
+  get left() { return this.infinite ? Infinity : this.cards.length - this.next; }
   /** Decks still in the shoe, as a dealer's discard tray would show it. */
   get decksLeft() { return this.left / 52; }
   /** True once the cut card has come out: shuffle before the next round. */
-  get pastCut() { return this.next >= this.cut; }
-  draw() { if (this.next >= this.cards.length) this.shuffle(); return this.cards[this.next++]; }
+  get pastCut() { return !this.infinite && this.next >= this.cut; }
+  draw() {
+    if (this.infinite) { if (this.stacked) { this.stacked--; return this.cards[this.next++]; } const i = Math.floor(this.rng() * 52); return { rank: RANKS[i % 13], suit: SUITS[(i / 13) | 0] }; }
+    if (this.next >= this.cards.length) this.shuffle(); return this.cards[this.next++];
+  }
+  /** The cards not yet dealt (an infinite shoe has none to list). */
+  unseen() { return this.infinite ? [] : this.cards.slice(this.next); }
 }
 
 /** The true count: the running count per deck still to be dealt. `round` "none", "floor" (toward minus infinity) or "trunc" (toward zero). */
 function trueCount(running, cardsLeft, round = "none") {
+  if (!Number.isFinite(cardsLeft)) return 0;
   const tc = running / Math.max(cardsLeft / 52, 0.25);
   return round === "floor" ? Math.floor(tc) : round === "trunc" ? Math.trunc(tc) : tc;
 }
@@ -286,57 +301,77 @@ function trueCount(running, cardsLeft, round = "none") {
 function dealerHits(cards, rules = RULES) { const { total, soft } = handTotal(cards); return total < 17 || (total === 17 && soft && rules.hitSoft17); }
 
 /**
- * One round at a table: place a bet, deal, offer insurance on an ace, the dealer peeks for blackjack on an ace or a ten,
- * then the player's hands in turn, then the dealer, then settlement. The running count follows every card a player at
- * the table can see: the hole card counts only once it is turned over.
+ * One round at a table. `bets` is one bet or one per seat, left to right as the dealer deals; a seat with a bet of 0
+ * still gets cards (another player whose money is not counted). Each seat gets a card, the dealer an upcard, each seat
+ * a second card, and the dealer a hole card face down (in the no-hole-card game the dealer's second card comes after
+ * the players). An ace up offers every seat insurance in turn; the dealer peeks under an ace or a ten. Then the hands
+ * in seat order, then the dealer, then settlement. The running count follows every card a player at the table can see:
+ * the hole card counts only once it is turned over. Every card carries `seq`, the order it was dealt in, for drawing.
  */
 class Round {
-  constructor(shoe, rules, bet) {
-    this.shoe = shoe; this.rules = { ...RULES, ...rules }; this.bet = bet; this.log = [];
-    this.hands = [{ cards: [], bet, done: false, doubled: false, fromSplit: false, surrendered: false }];
-    this.dealer = []; this.holeShown = false; this.insurance = 0; this.active = 0; this.phase = "deal";
-    const p = this.hands[0];
-    p.cards.push(this.seen(shoe.draw())); this.dealer.push(this.seen(shoe.draw())); p.cards.push(this.seen(shoe.draw())); this.dealer.push(shoe.draw());
+  constructor(shoe, rules, bets, { me = 0 } = {}) {
+    this.shoe = shoe; this.rules = { ...RULES, ...rules }; this.me = me; this.log = []; this.seq = 0;
+    this.bets = Array.isArray(bets) ? bets.slice() : [bets]; this.bet = this.bets[me];
+    this.hands = this.bets.map((bet, seat) => ({ seat, cards: [], bet, done: false, doubled: false, fromSplit: false, surrendered: false, splitAces: false }));
+    this.dealer = []; this.holeShown = false; this.insurance = this.bets.map(() => 0); this.active = 0; this.phase = "deal";
+    for (const h of this.hands) h.cards.push(this.seen(this.draw()));
+    this.dealer.push(this.seen(this.draw()));
+    for (const h of this.hands) h.cards.push(this.seen(this.draw()));
+    if (this.rules.holeCard) this.dealer.push(this.draw());
+    this.insuranceSeat = 0;
     this.phase = this.upcard.rank === "A" ? "insurance" : "peek";
     if (this.phase === "peek") this.peek();
   }
+  draw() { return { ...this.shoe.draw(), seq: this.seq++ }; }
   /** Count a card as it is shown, and hand it back. */
   seen(card) { this.shoe.runningCount += hiLo(card.rank); return card; }
   get upcard() { return this.dealer[0]; }
   get hand() { return this.hands[this.active]; }
-  /** Take insurance (half the bet) or not, when the dealer shows an ace. */
+  /** The seat that decides next: whose insurance it is, or whose hand is in play. */
+  get turn() { return this.phase === "insurance" ? this.insuranceSeat : this.phase === "player" ? this.hand.seat : null; }
+  handsOf(seat) { return this.hands.filter((h) => h.seat === seat); }
+  /** Take insurance (half the bet) or not, for the seat whose turn it is, when the dealer shows an ace. */
   takeInsurance(yes) {
     if (this.phase !== "insurance") throw new Error("insurance is only offered with an ace up, before anything else");
-    this.insurance = yes ? this.bet / 2 : 0; this.phase = "peek"; this.peek();
+    this.insurance[this.insuranceSeat] = yes ? this.bets[this.insuranceSeat] / 2 : 0;
+    if (++this.insuranceSeat >= this.bets.length) { this.phase = "peek"; this.peek(); }
   }
-  peek() { // the dealer checks under an ace or a ten for blackjack; a blackjack either side ends the round
-    const dealerBJ = points(this.upcard.rank) >= 10 && isBlackjack(this.dealer), playerBJ = isBlackjack(this.hands[0].cards);
-    if (dealerBJ || playerBJ) { this.hands[0].done = true; this.finish(); } else this.phase = "player";
+  peek() { // with a hole card the dealer checks under an ace or a ten, and a blackjack ends the round; a player's blackjack stands
+    const dealerBJ = this.rules.holeCard && points(this.upcard.rank) >= 10 && isBlackjack(this.dealer);
+    if (dealerBJ) { for (const h of this.hands) h.done = true; this.finish(); return; }
+    for (const h of this.hands) if (isBlackjack(h.cards)) h.done = true;
+    this.phase = "player"; this.active = 0;
+    while (this.active < this.hands.length && this.hands[this.active].done) this.active++;
+    if (this.active >= this.hands.length) { this.active = this.hands.length - 1; this.finish(); }
   }
   /** What the current hand may do now. */
   options() {
     if (this.phase !== "player") return [];
-    const h = this.hand, two = h.cards.length === 2, r = this.rules, out = ["hit", "stand"];
-    if (h.splitAces && !r.hitSplitAces) return ["stand"];
-    if (two && (!h.fromSplit || r.das)) out.push("double");
-    if (two && points(h.cards[0].rank) === points(h.cards[1].rank) && this.hands.length < r.maxHands) out.push("split");
-    if (two && !h.fromSplit && this.hands.length === 1 && r.lateSurrender) out.push("surrender");
+    const h = this.hand, two = h.cards.length === 2, r = this.rules, mine = this.handsOf(h.seat).length;
+    const pair = two && points(h.cards[0].rank) === points(h.cards[1].rank) && mine < r.maxHands && (!h.splitAces || r.resplitAces);
+    if (h.splitAces && !r.hitSplitAces) return pair ? ["stand", "split"] : ["stand"];
+    const out = ["hit", "stand"];
+    if (two && (!h.fromSplit || r.das) && canDoubleTotal(handTotal(h.cards).total, r)) out.push("double");
+    if (pair) out.push("split");
+    if (two && !h.fromSplit && mine === 1 && r.lateSurrender && r.holeCard) out.push("surrender");
     return out;
   }
   act(move) {
     if (!this.options().includes(move)) throw new Error(`${move} is not allowed now`);
     const h = this.hand;
-    if (move === "hit") { h.cards.push(this.seen(this.shoe.draw())); if (handTotal(h.cards).total >= 21) this.advance(); }
+    if (move === "hit") { h.cards.push(this.seen(this.draw())); if (handTotal(h.cards).total >= 21) this.advance(); }
     else if (move === "stand") this.advance();
-    else if (move === "double") { h.bet *= 2; h.doubled = true; h.cards.push(this.seen(this.shoe.draw())); this.advance(); }
+    else if (move === "double") { h.bet *= 2; h.doubled = true; h.cards.push(this.seen(this.draw())); this.advance(); }
     else if (move === "surrender") { h.surrendered = true; this.advance(); }
     else if (move === "split") {
       const aces = h.cards[0].rank === "A", second = h.cards.pop();
-      const twin = { cards: [second], bet: h.bet, done: false, doubled: false, fromSplit: true, surrendered: false, splitAces: aces };
+      const twin = { seat: h.seat, cards: [second], bet: h.bet, done: false, doubled: false, fromSplit: true, surrendered: false, splitAces: aces };
       h.fromSplit = true; h.splitAces = aces; this.hands.splice(this.active + 1, 0, twin);
-      h.cards.push(this.seen(this.shoe.draw())); twin.cards.push(this.seen(this.shoe.draw()));
-      if (aces && !this.rules.hitSplitAces) { h.done = twin.done = true; this.active = this.hands.length - 1; this.advance(); }
-      else if (handTotal(h.cards).total === 21) this.advance();
+      h.cards.push(this.seen(this.draw())); twin.cards.push(this.seen(this.draw()));
+      if (aces && !this.rules.hitSplitAces) { // each ace has its one card; only one dealt another ace, with room, waits to be split again
+        for (const x of [h, twin]) x.done = !(this.rules.resplitAces && x.cards[1].rank === "A" && this.handsOf(h.seat).length < this.rules.maxHands);
+        if (h.done) this.advance();
+      } else if (handTotal(h.cards).total === 21) this.advance();
     }
     this.log.push(move);
   }
@@ -346,15 +381,17 @@ class Round {
     if (this.active >= this.hands.length) { this.active = this.hands.length - 1; this.finish(); }
     else if (handTotal(this.hand.cards).total === 21) this.advance(); // a split hand dealt to 21 stands by itself
   }
-  finish() { // turn the hole card, the dealer draws if any hand is still live, then pay
-    this.seen(this.dealer[1]); this.holeShown = true;
-    const live = this.hands.some((h) => !h.surrendered && handTotal(h.cards).total <= 21) && !isBlackjack(this.hands[0].cards, this.hands[0].fromSplit);
-    if (live && !isBlackjack(this.dealer)) while (dealerHits(this.dealer, this.rules)) this.dealer.push(this.seen(this.shoe.draw()));
+  finish() { // turn the hole card (or deal the dealer's second), the dealer draws if any hand is still live, then pay
+    if (this.rules.holeCard) this.seen(this.dealer[1]); else this.dealer.push(this.seen(this.draw()));
+    this.holeShown = true;
+    const live = this.hands.some((h) => !h.surrendered && handTotal(h.cards).total <= 21 && !isBlackjack(h.cards, h.fromSplit));
+    if (live && !isBlackjack(this.dealer)) while (dealerHits(this.dealer, this.rules)) this.dealer.push(this.seen(this.draw()));
     this.phase = "done"; this.results = this.settle();
   }
-  /** Each hand's result and net win in units of money, and the insurance's. */
+  /** Each hand's result and net win in units of money, and each seat's insurance; the top level is seat `me`'s. */
   settle() {
-    const d = handTotal(this.dealer).total, dealerBJ = isBlackjack(this.dealer), out = [];
+    const d = handTotal(this.dealer).total, dealerBJ = isBlackjack(this.dealer);
+    const seats = this.bets.map(() => ({ hands: [], insurance: 0, net: 0 }));
     for (const h of this.hands) {
       const p = handTotal(h.cards).total, bj = isBlackjack(h.cards, h.fromSplit);
       let net, result;
@@ -366,17 +403,18 @@ class Round {
       else if (d > 21 || p > d) { net = h.bet; result = "win"; }
       else if (p === d) { net = 0; result = "push"; }
       else { net = -h.bet; result = "lose"; }
-      out.push({ result, net, total: p });
+      seats[h.seat].hands.push({ result, net, total: p }); seats[h.seat].net += net;
     }
-    const insurance = this.insurance ? (dealerBJ ? 2 * this.insurance : -this.insurance) : 0;
-    return { hands: out, insurance, net: out.reduce((s, h) => s + h.net, 0) + insurance, dealer: d, dealerBlackjack: dealerBJ };
+    this.insurance.forEach((ins, s) => { if (ins) { seats[s].insurance = dealerBJ ? 2 * ins : -ins; seats[s].net += seats[s].insurance; } });
+    return { ...seats[this.me], seats, dealer: d, dealerBlackjack: dealerBJ };
   }
 }
 
 // ---- strategy.mjs
 // Basic strategy, worked out from the rules instead of copied from a chart: the expected value of every move for every
 // hand against every dealer upcard, with cards drawn from an infinite deck (every rank always 1 in 13, tens 4 in 13).
-// The dealer peeks for blackjack, so every number here is for a round where the dealer turned out not to have one.
+// Where the dealer peeks for blackjack, every number here is for a round where the dealer turned out not to have one;
+// in the no-hole-card game the dealer's blackjack is one of the dealer's outcomes and takes doubles and splits too.
 //
 // A finite shoe changes the odds a little as cards come out, so the calls that are close here can flip in a real shoe;
 // the app shows how close each call is (the gap in expected value between the best move and the next) for that reason.
@@ -384,36 +422,45 @@ class Round {
 
 /** The card values 2 to 11 (an ace as 11) and how likely each is off an infinite deck. */
 const DRAWS = [[2, 1 / 13], [3, 1 / 13], [4, 1 / 13], [5, 1 / 13], [6, 1 / 13], [7, 1 / 13], [8, 1 / 13], [9, 1 / 13], [10, 4 / 13], [11, 1 / 13]];
+const P = (v) => (v === 10 ? 4 / 13 : 1 / 13);
 /** Add a card to a total; `soft` is whether an ace in the hand still counts 11. */
 function add(total, soft, v) {
   if (v === 11) return total + 11 <= 21 ? [total + 11, true] : [total + 1, soft];
   const t = total + v; return t > 21 && soft ? [t - 10, false] : [t, soft];
 }
+/** The chance the dealer has blackjack under an upcard of this value. */
+const dealerBlackjackChance = (up) => (up === 11 ? P(10) : up === 10 ? P(11) : 0);
 
 /**
- * Where the dealer ends up from an upcard (2 to 11), given no blackjack: a map from 17 to 21 and "bust" to probability.
- * The hole card is drawn from the deck less the card that would have made blackjack.
+ * Where the dealer ends up from an upcard (2 to 11): a map from 17 to 21 and "bust" to probability. With a hole card the
+ * dealer has peeked, so the second card is drawn from the deck less the card that would have made blackjack; without
+ * one, blackjack is an outcome of its own ("bj").
  */
 function dealerOutcomes(up, rules = RULES) {
-  const out = { 17: 0, 18: 0, 19: 0, 20: 0, 21: 0, bust: 0 };
+  const out = { 17: 0, 18: 0, 19: 0, 20: 0, 21: 0, bust: 0 }, peeked = rules.holeCard !== false;
+  if (!peeked) out.bj = 0;
   const play = (t, s, p) => {
     if (t > 21) { out.bust += p; return; }
     if (t >= 17 && !(t === 17 && s && rules.hitSoft17)) { out[t] += p; return; }
     for (const [v, q] of DRAWS) { const [t2, s2] = add(t, s, v); play(t2, s2, p * q); }
   };
-  const [t0, s0] = add(0, false, up), banned = up === 11 ? 10 : up === 10 ? 11 : null, rest = 1 - (banned ? DRAWS.find(([v]) => v === banned)[1] : 0);
-  for (const [v, q] of DRAWS) { if (v === banned) continue; const [t, s] = add(t0, s0, v); play(t, s, q / rest); }
+  const [t0, s0] = add(0, false, up), banned = up === 11 ? 10 : up === 10 ? 11 : null, rest = peeked && banned ? 1 - P(banned) : 1;
+  for (const [v, q] of DRAWS) {
+    if (v === banned && peeked) continue;
+    const [t, s] = add(t0, s0, v);
+    if (v === banned) out.bj += q; else play(t, s, q / rest);
+  }
   return out;
 }
 
 /** Everything about one dealer upcard under one set of rules: stand, hit, double and split values, memoised. */
 class Table {
   constructor(up, rules = RULES) {
-    this.up = up; this.rules = { ...RULES, ...rules }; this.dealer = dealerOutcomes(up, this.rules); this.hitMemo = new Map();
+    this.up = up; this.rules = { ...RULES, ...rules }; this.dealer = dealerOutcomes(up, this.rules); this.hitMemo = new Map(); this.splitMemo = new Map();
   }
   stand(t) {
     if (t > 21) return -1;
-    const d = this.dealer; let ev = d.bust;
+    const d = this.dealer; let ev = d.bust - (d.bj ?? 0);
     for (const o of [17, 18, 19, 20, 21]) ev += d[o] * (t > o ? 1 : t === o ? 0 : -1);
     return ev;
   }
@@ -433,42 +480,75 @@ class Table {
     return ev;
   }
   /**
-   * Splitting a pair of value v: two hands, each starting from one card and played on as well as possible (doubling only
-   * if the rules allow it after a split; split aces get one card each). A second split is not counted, which makes this
-   * a slight underestimate where resplitting is allowed.
+   * Splitting a pair of value v when the seat will then have `handsAfter` hands. Each new hand takes a card: a card that
+   * is not v makes a hand played on as well as possible (doubling only if the rules allow it after a split; split aces
+   * get one card each unless they may be hit); another v may be split again while the seat has fewer than `maxHands`
+   * hands (aces only if `resplitAces`), and is when that is worth more. With every card independent (an infinite deck)
+   * the hands waiting for a card are all alike, so f(h, k), the value of k waiting hands with h hands in all, is exact:
+   *   f(h, k) = p max(f(h + 1, k + 1), Evv + f(h, k - 1)) + (1 - p) (Enot + f(h, k - 1)), the max only while h < maxHands.
    */
-  split(v) {
-    const [t0, s0] = add(0, false, v); let one = 0;
-    for (const [c, q] of DRAWS) {
+  split(v, handsAfter = 2) {
+    const key = v * 16 + handsAfter; if (this.splitMemo.has(key)) return this.splitMemo.get(key);
+    const r = this.rules, aces = v === 11, M = aces && !r.resplitAces ? Math.min(2, r.maxHands) : r.maxHands, p = P(v), [t0, s0] = add(0, false, v);
+    const after = (c) => {
       const [t, s] = add(t0, s0, c);
-      if (v === 11 && !this.rules.hitSplitAces) { one += q * this.stand(t); continue; }
-      const e = this.bestTwoCard(t, s, { canDouble: this.rules.das });
-      one += q * Math.max(...Object.values(e));
-    }
-    return 2 * one;
+      if (aces && !r.hitSplitAces) return this.stand(t);
+      return Math.max(...Object.values(this.bestTwoCard(t, s, { canDouble: r.das && canDoubleTotal(t, r) })));
+    };
+    let Enot = 0; for (const [c, q] of DRAWS) if (c !== v) Enot += q * after(c); Enot /= 1 - p;
+    const Evv = after(v), memo = new Map();
+    const f = (h, k) => {
+      if (k === 0) return 0;
+      const id = h * 64 + k; if (memo.has(id)) return memo.get(id);
+      const keep = Evv + f(h, k - 1), x = p * (h < M ? Math.max(f(h + 1, k + 1), keep) : keep) + (1 - p) * (Enot + f(h, k - 1));
+      memo.set(id, x); return x;
+    };
+    const ev = f(handsAfter, 2); this.splitMemo.set(key, ev); return ev;
   }
 }
 
 const tables = new Map();
+const ruleKey = (r) => [r.hitSoft17, r.das, r.hitSplitAces, r.resplitAces, r.maxHands, r.doubleOn, r.holeCard].join("|");
 /** A cached Table for an upcard value and rules. */
 function table(up, rules = RULES) {
-  const r = { ...RULES, ...rules }, key = `${up}|${r.hitSoft17}|${r.das}|${r.hitSplitAces}`;
+  const r = { ...RULES, ...rules }, key = `${up}|${ruleKey(r)}`;
   if (!tables.has(key)) tables.set(key, new Table(up, r));
   return tables.get(key);
 }
 
 /**
  * The expected value of each move open to a hand right now (moves as Round.options() names them), best first.
- * `hand` is the cards; `fromSplit` stops surrender.
+ * `handsNow` is how many hands the seat has, which limits splitting again.
  */
-function evaluate(cards, upRank, options, rules = RULES) {
+function evaluate(cards, upRank, options, rules = RULES, handsNow = 1) {
   const T = table(points(upRank), rules), { total, soft } = handTotal(cards), ev = {};
   if (options.includes("stand")) ev.stand = T.stand(total);
   if (options.includes("hit")) ev.hit = T.hit(total, soft);
   if (options.includes("double")) ev.double = T.double(total, soft);
   if (options.includes("surrender")) ev.surrender = -0.5;
-  if (options.includes("split")) ev.split = T.split(points(cards[0].rank));
+  if (options.includes("split")) ev.split = T.split(points(cards[0].rank), handsNow + 1);
   return Object.entries(ev).sort((a, b) => b[1] - a[1]);
+}
+
+/**
+ * The player's expected return per unit bet over a whole round played by this strategy, insurance never taken, with
+ * every card off an infinite deck: every first two cards against every upcard, a blackjack paid unless the dealer has
+ * one too. Negative is the house's edge. A real shoe of a few decks returns a little more than this.
+ */
+function houseEdge(rules = RULES) {
+  const r = { ...RULES, ...rules }; let ev = 0;
+  for (const [u, qu] of DRAWS) {
+    const T = table(u, r), bj = dealerBlackjackChance(u);
+    for (const [a, qa] of DRAWS) for (const [b, qb] of DRAWS) {
+      const p = qu * qa * qb, [t1, s1] = add(0, false, a), [t, s] = add(t1, s1, b);
+      if (t === 21) { ev += p * (1 - bj) * r.blackjackPays; continue; }
+      const moves = T.bestTwoCard(t, s, { canDouble: canDoubleTotal(t, r), canSurrender: r.lateSurrender && r.holeCard });
+      if (a === b) moves.split = T.split(a);
+      const best = Math.max(...Object.values(moves));
+      ev += r.holeCard ? p * (-bj + (1 - bj) * best) : p * best;
+    }
+  }
+  return ev;
 }
 
 const UPS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
@@ -483,12 +563,13 @@ function cell(ev) {
 }
 /** The whole chart for a set of rules: hard 5 to 20, soft 13 to 20, and every pair, against 2 to ace. */
 function chart(rules = RULES) {
-  const r = { ...RULES, ...rules }, rows = { hard: [], soft: [], pairs: [] };
-  for (let t = 5; t <= 20; t++) rows.hard.push({ label: String(t), cells: UPS.map((u) => cell(table(u, r).bestTwoCard(t, false, { canSurrender: r.lateSurrender }))) });
-  for (let t = 13; t <= 20; t++) rows.soft.push({ label: `A,${t - 11}`, cells: UPS.map((u) => cell(table(u, r).bestTwoCard(t, true, { canSurrender: r.lateSurrender }))) });
+  const r = { ...RULES, ...rules }, rows = { hard: [], soft: [], pairs: [] }, sur = r.lateSurrender && r.holeCard;
+  const two = (u, t, s) => table(u, r).bestTwoCard(t, s, { canSurrender: sur, canDouble: canDoubleTotal(t, r) });
+  for (let t = 5; t <= 20; t++) rows.hard.push({ label: String(t), cells: UPS.map((u) => cell(two(u, t, false))) });
+  for (let t = 13; t <= 20; t++) rows.soft.push({ label: `A,${t - 11}`, cells: UPS.map((u) => cell(two(u, t, true))) });
   for (const v of [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) {
     const [t, s] = add(...add(0, false, v), v);
-    rows.pairs.push({ label: v === 11 ? "A,A" : v === 10 ? "10,10" : `${v},${v}`, cells: UPS.map((u) => { const T = table(u, r); return cell({ ...T.bestTwoCard(t, s, { canSurrender: r.lateSurrender }), split: T.split(v) }); }) });
+    rows.pairs.push({ label: v === 11 ? "A,A" : v === 10 ? "10,10" : `${v},${v}`, cells: UPS.map((u) => cell({ ...two(u, t, s), split: table(u, r).split(v) })) });
   }
   return { ups: UPS, rows };
 }

@@ -1,6 +1,8 @@
 // Checks on the engine and the strategy. Run with: node trainer/test.mjs
-import { RULES, RANKS, hiLo, handTotal, isBlackjack, Shoe, trueCount, Round, mulberry32 } from "./engine.mjs";
-import { DRAWS, add, dealerOutcomes, table, evaluate, chart } from "./strategy.mjs";
+import { RULES, RANKS, hiLo, handTotal, isBlackjack, Shoe, trueCount, Round, mulberry32, points } from "./engine.mjs";
+import { DRAWS, add, dealerOutcomes, table, evaluate, chart, houseEdge } from "./strategy.mjs";
+import { Sim, TC_MIN } from "./sim.mjs";
+import { betFor, botMove, STYLES } from "./bots.mjs";
 
 let pass = 0, fail = 0;
 const ok = (name, cond, got = "") => { if (cond) { pass++; console.log(`  PASS  ${name}`); } else { fail++; console.log(`  FAIL  ${name}  ${got}`); } };
@@ -68,6 +70,69 @@ ok("double down on 11 and win: +20", play(["6", "6", "5", "10", "10", "10"], 10,
 {
   const r = play(["10", "5", "6", "9", "5"], 10, ["hit"]), seen = [...r.hands.flatMap((h) => h.cards), ...r.dealer].reduce((s, c) => s + hiLo(c.rank), 0);
   ok(`the running count follows every card shown, the hole card once it is turned (${r.shoe.runningCount} = ${seen})`, r.shoe.runningCount === seen);
+}
+
+console.log("\nA TABLE OF SEVERAL SEATS (seat 1, seat 2, dealer up, seat 1, seat 2, dealer hole, then the draws)");
+{
+  const r = new Round(new Shoe({ decks: 6, rng: mulberry32(3), stack: ["10", "9", "6", "7", "8", "10", "5"] }), RULES, [10, 20], { me: 1 });
+  ok("cards go round the table in order: 10,7 to the first seat, 9,8 to the second, 6 up and 10 in the hole", r.hands[0].cards.map((c) => c.rank).join() === "10,7" && r.hands[1].cards.map((c) => c.rank).join() === "9,8" && r.dealer.map((c) => c.rank).join() === "6,10" && r.turn === 0);
+  r.act("stand"); ok("the second seat plays after the first", r.turn === 1); r.act("stand");
+  ok(`both stand on 17; the dealer's 16 draws 5 to 21: the first seat loses 10, the second 20, and the round reports seat 2 (${r.results.net})`, r.results.seats[0].net === -10 && r.results.seats[1].net === -20 && r.results.net === -20);
+  ok("every card carries the order it was dealt in", [...r.hands.flatMap((h) => h.cards), ...r.dealer].map((c) => c.seq).sort((a, b) => a - b).join() === "0,1,2,3,4,5,6");
+}
+{
+  const r = new Round(new Shoe({ decks: 6, rng: mulberry32(3), stack: ["9", "9", "A", "8", "8", "K"] }), RULES, [10, 10]);
+  r.takeInsurance(true); ok("insurance goes round every seat in turn", r.phase === "insurance" && r.turn === 1); r.takeInsurance(false);
+  ok(`the dealer has blackjack: the insured seat breaks even, the other loses 10 (${r.results.seats.map((s) => s.net)})`, r.results.seats[0].net === 0 && r.results.seats[1].net === -10);
+}
+ok("a player's blackjack at a full table is paid at the end and the others still play", (() => { const r = new Round(new Shoe({ decks: 6, rng: mulberry32(3), stack: ["A", "10", "7", "K", "6", "10", "10"] }), RULES, [10, 10]); const ok1 = r.phase === "player" && r.turn === 1; r.act("stand"); return ok1 && r.results.seats[0].net === 15 && r.results.seats[1].net === -10; })());
+
+console.log("\nRULE TOGGLES IN THE ENGINE");
+ok("double on 10 and 11 only: 5,4 (9) cannot double", !play(["5", "6", "4", "10"], 10, [], { doubleOn: "10-11" }).options().includes("double"));
+ok("no-hole-card game: no surrender, and the dealer has one card until the players are done", (() => { const r = play(["10", "9", "6"], 10, [], { holeCard: false }); return !r.options().includes("surrender") && r.dealer.length === 1; })());
+ok("no-hole-card game: the dealer's blackjack after a double takes both bets, 20", play(["6", "A", "5", "9", "K"], 10, ["decline", "double"], { holeCard: false }).results.net === -20);
+{
+  const r = play(["A", "6", "A", "10", "A", "5", "9", "K", "10"], 10, ["split", "split"], { resplitAces: true });
+  ok(`resplit aces: A,A split, an ace again split again, three hands of 20, 16 and 21 (not a blackjack) against a dealer who busts: +30 (${r.results.net})`, r.hands.length === 3 && r.results.net === 30 && r.results.hands.every((h) => h.result === "win"));
+}
+ok("without resplitting aces, a split ace dealt an ace just stands", (() => { const r = play(["A", "6", "A", "10", "A", "5", "10"], 10, ["split"]); return r.phase === "done" && r.hands.length === 2; })());
+{
+  const shoe = new Shoe({ infinite: true, rng: mulberry32(9) }), seen = { A: 0, 10: 0 }, N = 130000;
+  for (let i = 0; i < N; i++) { const p = points(shoe.draw().rank); if (p === 11) seen.A++; if (p === 10) seen[10]++; }
+  ok(`an infinite shoe deals aces 1 in 13 and tens 4 in 13 (${(13 * seen.A / N).toFixed(3)}, ${(13 * seen[10] / N).toFixed(3)}) and never runs out or reaches the cut`, Math.abs(13 * seen.A / N - 1) < 0.03 && Math.abs(13 * seen[10] / N - 4) < 0.05 && !shoe.pastCut && trueCount(5, shoe.left) === 0);
+}
+ok("bot styles: the never-bust player stands on 12, the copycat hits 16", (() => { const r = play(["10", "6", "2", "10"], 10, []); return botMove("hunch", r) === "stand" && botMove("mimic", r) === "hit" && Object.keys(STYLES).length === 5; })());
+ok("a bet ramp: 1 unit below +2, 2 at +2, 4 at +3, 8 from +5", betFor([[-99, 1], [2, 2], [3, 4], [4, 6], [5, 8]], 1) === 1 && betFor([[-99, 1], [2, 2], [3, 4], [4, 6], [5, 8]], 2) === 2 && betFor([[-99, 1], [2, 2], [3, 4], [4, 6], [5, 8]], 3.9) === 4 && betFor([[-99, 1], [2, 2], [3, 4], [4, 6], [5, 8]], 9) === 8);
+
+console.log("\nTHE HOUSE EDGE, TWO WAYS");
+// The same cards under two sets of rules, round by round (each round's infinite shoe seeded alike), so the difference
+// between the rules is measured with the rest of the luck taken out.
+const playOne = (rules, seed) => { const r = new Round(new Shoe({ infinite: true, rng: mulberry32(seed) }), rules, 1);
+  if (r.phase === "insurance") r.takeInsurance(false);
+  while (r.phase === "player") r.act(evaluate(r.hand.cards, r.upcard.rank, r.options(), r.rules, r.handsOf(r.hand.seat).length)[0][0]);
+  return r.results.net; };
+const base = houseEdge(RULES);
+ok(`the default rules (S17, 3:2, DAS, late surrender, split to 4, infinite deck) return ${(100 * base).toFixed(3)}% a round`, base < 0 && base > -0.01);
+for (const [name, ch, N] of [["6:5 blackjacks", { blackjackPays: 1.2 }, 60000], ["the dealer hitting soft 17", { hitSoft17: true }, 120000], ["no double after split", { das: false }, 120000], ["resplitting aces", { resplitAces: true }, 60000], ["doubling 10 and 11 only", { doubleOn: "10-11" }, 120000], ["splitting to 2 hands only", { maxHands: 2 }, 120000], ["no surrender", { lateSurrender: false }, 120000], ["hitting split aces", { hitSplitAces: true }, 60000]]) {
+  const B = { ...RULES, ...ch }; let s = 0, s2 = 0;
+  for (let i = 0; i < N; i++) { const d = playOne(B, 7919 * i + 1) - playOne(RULES, 7919 * i + 1); s += d; s2 += d * d; }
+  const m = s / N, se = Math.sqrt((s2 / N - m * m) / N), ex = houseEdge(B) - base;
+  ok(`${name}: computed ${(100 * ex >= 0 ? "+" : "")}${(100 * ex).toFixed(3)}%, ${N.toLocaleString("en-US")} paired rounds ${(100 * m >= 0 ? "+" : "")}${(100 * m).toFixed(3)}% (${((m - ex) / se).toFixed(2)} standard errors)`, Math.abs(m - ex) < 4 * se);
+}
+for (const [name, rules] of [["default rules", RULES], ["no-hole-card game", { ...RULES, holeCard: false }]]) {
+  const N = 300000; let s = 0, s2 = 0;
+  for (let i = 0; i < N; i++) { const x = playOne(rules, 104729 * i + 3); s += x; s2 += x * x; }
+  const m = s / N, se = Math.sqrt((s2 / N - m * m) / N), ex = houseEdge(rules);
+  ok(`${name}: computed ${(100 * ex).toFixed(3)}%, ${N.toLocaleString("en-US")} rounds ${(100 * m).toFixed(3)}% +/- ${(100 * se).toFixed(3)} (${((m - ex) / se).toFixed(2)} standard errors)`, Math.abs(m - ex) < 4 * se);
+}
+
+console.log("\nTHE SIMULATOR");
+{
+  const sim = new Sim({ rules: RULES, rounds: 300000, seed: 21, spread: [[-99, 1], [2, 2], [3, 4], [4, 6], [5, 8]], insureAt: 3 }).step(300000), s = sim.summary();
+  const edge = (lo, hi) => { let n = 0, net = 0; sim.byTc.forEach((b, i) => { const tc = i + TC_MIN; if (tc >= lo && tc <= hi) { n += b.n; net += b.net; } }); return { n, e: net / n }; };
+  const low = edge(-99, -1), high = edge(3, 99);
+  ok(`six decks, cut at 75%: flat bets earn ${(100 * low.e).toFixed(2)}% at a true count of -1 or less (${low.n.toLocaleString("en-US")} rounds) and ${(100 * high.e).toFixed(2)}% at +3 or more (${high.n.toLocaleString("en-US")})`, high.e > low.e + 0.01);
+  ok(`a 1 to 8 ramp over 300,000 rounds: ${(100 * s.edge).toFixed(2)}% of the money bet, ${s.ev.toFixed(4)} units a round +/- ${s.se.toFixed(4)}, average bet ${s.avgBet.toFixed(2)} units`, Number.isFinite(s.edge) && s.rounds === 300000);
 }
 
 console.log("\nA WHOLE SHOE GAME");
