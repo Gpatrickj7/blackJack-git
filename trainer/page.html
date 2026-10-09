@@ -1,0 +1,199 @@
+<title>Shoe Counter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one column the width of a blackjack table seen from the player's seat: tabs, the felt, the rail of controls under it. */
+:root {
+  color-scheme: dark;
+  --felt: #0e3a2c; --felt-hi: #15503d; --felt-line: rgba(241, 234, 216, 0.22); --arc: rgba(241, 234, 216, 0.55);
+  --rail: #24160f; --rail-hi: #3a2519;
+  --ink: #f1ead8; --muted: #a8bcae;
+  --gold: #e3b44b; --gold-ink: #2b1d05;
+  --card: #fbf8f0; --card-ink: #17171b; --suit-red: #c22f28;
+  --good: #73d6a0; --bad: #ff8a78; --warn: #f2c94c;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--rail); }
+body { margin: 0; color: var(--ink); font: 15px/1.5 var(--body); padding-inline: 16px; padding-block: 12px 28px; }
+.wrap { max-width: 760px; margin: 0 auto; display: grid; gap: 14px; }
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 { font: 800 clamp(26px, 6vw, 36px)/1 var(--display); letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+h1 span { color: var(--gold); }
+.bank { font: 700 15px var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+.bank b { color: var(--ink); }
+nav { display: flex; gap: 4px; background: var(--rail-hi); padding: 4px; border-radius: 12px; overflow-x: auto; }
+nav button { flex: 1 0 auto; border: 0; background: transparent; color: var(--muted); font: 600 14px var(--body); padding: 9px 12px; border-radius: 9px; cursor: pointer; }
+nav button[aria-selected="true"] { background: var(--felt); color: var(--ink); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.felt { background: radial-gradient(120% 90% at 50% 0%, var(--felt-hi), var(--felt) 70%); border-radius: 22px; padding: 18px 16px 20px; display: grid; gap: 14px; box-shadow: inset 0 0 0 3px var(--rail-hi), 0 10px 30px rgba(0, 0, 0, 0.35); }
+.zone { display: grid; gap: 6px; min-height: 128px; }
+.zone h2 { margin: 0; font: 600 12px var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; align-items: baseline; }
+.zone h2 .total { font: 700 15px var(--mono); letter-spacing: 0; color: var(--ink); }
+.hands { display: flex; gap: 18px; flex-wrap: wrap; }
+.hand { display: grid; gap: 4px; padding: 6px; border-radius: 12px; }
+.hand.active { box-shadow: 0 0 0 2px var(--gold); }
+.hand .meta { font: 600 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.cards { display: flex; }
+.card { width: 58px; height: 82px; border-radius: 7px; background: var(--card); color: var(--card-ink); display: grid; grid-template-rows: auto 1fr; padding: 4px 6px; font: 800 18px/1 var(--display); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); margin-right: -18px; animation: deal 0.18s ease-out; }
+.card:last-child { margin-right: 0; }
+.card .pip { align-self: end; justify-self: end; font-size: 26px; }
+.card.red { color: var(--suit-red); }
+.card.back { background: repeating-linear-gradient(45deg, #7a1d17 0 6px, #96261e 6px 12px); box-shadow: inset 0 0 0 4px var(--card), 0 2px 6px rgba(0, 0, 0, 0.35); }
+@keyframes deal { from { transform: translateY(-10px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .card { animation: none; } }
+.arc { text-align: center; font: 600 11px var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--arc); border-block: 1px solid var(--felt-line); padding-block: 6px; }
+.arc b { color: var(--gold); font-weight: 600; }
+.msg { min-height: 24px; font-weight: 600; }
+.msg .good { color: var(--good); } .msg .bad { color: var(--bad); } .msg .warn { color: var(--warn); }
+.coach { font-size: 14px; color: var(--muted); min-height: 21px; }
+.coach b { color: var(--ink); }
+.coach .miss { color: var(--bad); font-weight: 700; }
+.coach .hit { color: var(--good); font-weight: 700; }
+.controls { display: grid; gap: 10px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { border: 0; border-radius: 12px; padding: 12px 16px; font: 700 15px var(--body); cursor: pointer; background: var(--rail-hi); color: var(--ink); min-width: 74px; }
+.btn.primary { background: var(--gold); color: var(--gold-ink); }
+.btn:disabled { opacity: 0.35; cursor: default; }
+.btn kbd { font: 500 11px var(--mono); opacity: 0.6; margin-left: 4px; }
+.chips { display: flex; gap: 6px; align-items: center; }
+.chip { width: 40px; height: 40px; border-radius: 50%; border: 3px dashed rgba(255, 255, 255, 0.6); font: 700 12px var(--mono); color: #fff; cursor: pointer; }
+.bet { font: 700 18px var(--mono); min-width: 70px; text-align: center; font-variant-numeric: tabular-nums; }
+.countbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.stat { background: var(--rail-hi); border-radius: 12px; padding: 8px 10px; }
+.stat small { display: block; font: 600 11px var(--body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.stat b { font: 700 20px var(--mono); font-variant-numeric: tabular-nums; }
+.stat.blur b { filter: blur(7px); }
+.tray { height: 8px; border-radius: 4px; background: var(--rail-hi); overflow: hidden; position: relative; }
+.tray i { position: absolute; inset: 0 auto 0 0; background: var(--gold); }
+.tray u { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--bad); }
+.quiz { background: var(--rail-hi); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
+.quiz input, .quiz select, .panel input, .panel select { font: 700 18px var(--mono); width: 110px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--felt-line); background: var(--rail); color: var(--ink); }
+.panel { background: var(--felt); border-radius: 18px; padding: 16px; display: grid; gap: 12px; }
+.panel h2 { margin: 0; font: 800 22px var(--display); }
+.panel p { margin: 0; color: var(--muted); max-width: 62ch; }
+.bigcard { display: flex; justify-content: center; min-height: 128px; align-items: center; }
+.bigcard .card { width: 84px; height: 118px; font-size: 26px; margin: 0; }
+.bigcard .card .pip { font-size: 38px; }
+.settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 18px; }
+.settings label { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.settings select, .settings input[type="number"] { font: 600 14px var(--body); width: auto; padding: 6px 8px; }
+.chartwrap { overflow-x: auto; }
+table.chart { border-collapse: separate; border-spacing: 2px; font: 700 12px var(--mono); }
+table.chart th { color: var(--muted); font-weight: 600; padding: 2px 6px; }
+table.chart td { width: 34px; height: 26px; text-align: center; border-radius: 4px; cursor: pointer; color: #121212; }
+td.c-H { background: #e9e4d6; } td.c-S { background: #e3b44b; } td.c-D, td.c-Ds { background: #73d6a0; } td.c-P { background: #8fb7ff; } td.c-Rh, td.c-Rs, td.c-Rp { background: #ff8a78; }
+td.close { box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.45); }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.seq { display: flex; flex-wrap: wrap; gap: 4px; font: 600 13px var(--mono); }
+.seq span { padding: 2px 6px; border-radius: 6px; background: var(--rail-hi); }
+.seq .p { color: var(--good); } .seq .m { color: var(--bad); }
+footer { color: var(--muted); font-size: 13px; }
+@media (max-width: 480px) { .card { width: 50px; height: 72px; font-size: 16px; } .card .pip { font-size: 22px; } .countbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } .btn { padding: 12px 12px; min-width: 64px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Shoe <span>Counter</span></h1>
+    <div class="bank">Bankroll <b id="bankroll">1,000</b></div>
+  </header>
+  <nav role="tablist" aria-label="Sections">
+    <button role="tab" id="tab-play" aria-selected="true" data-tab="play">Play</button>
+    <button role="tab" id="tab-drill" aria-selected="false" data-tab="drill">Count drill</button>
+    <button role="tab" id="tab-tc" aria-selected="false" data-tab="tc">True count</button>
+    <button role="tab" id="tab-chart" aria-selected="false" data-tab="chart">Strategy</button>
+    <button role="tab" id="tab-rules" aria-selected="false" data-tab="rules">Rules &amp; stats</button>
+  </nav>
+
+  <section id="view-play" class="controls">
+    <div class="felt">
+      <div class="zone"><h2>Dealer <span class="total" id="dealer-total"></span></h2><div class="cards" id="dealer"></div></div>
+      <div class="arc" id="arc"></div>
+      <div class="zone"><h2>You</h2><div class="hands" id="hands"></div></div>
+      <div class="msg" id="msg"></div>
+      <div class="coach" id="coach"></div>
+    </div>
+    <div class="row" id="actions">
+      <button class="btn" id="a-hit" data-move="hit">Hit<kbd>H</kbd></button>
+      <button class="btn" id="a-stand" data-move="stand">Stand<kbd>S</kbd></button>
+      <button class="btn" id="a-double" data-move="double">Double<kbd>D</kbd></button>
+      <button class="btn" id="a-split" data-move="split">Split<kbd>P</kbd></button>
+      <button class="btn" id="a-surrender" data-move="surrender">Surrender<kbd>R</kbd></button>
+      <button class="btn" id="a-ins-yes" data-ins="yes" hidden>Insure</button>
+      <button class="btn" id="a-ins-no" data-ins="no" hidden>No insurance</button>
+    </div>
+    <div class="row">
+      <div class="chips" id="chips"></div>
+      <span class="bet" id="bet">10</span>
+      <button class="btn primary" id="deal">Deal<kbd>Space</kbd></button>
+    </div>
+    <div class="quiz" id="quiz" hidden></div>
+    <div class="countbar">
+      <div class="stat blur" id="s-rc"><small>Running count</small><b id="rc">0</b></div>
+      <div class="stat blur" id="s-tc"><small>True count</small><b id="tc">0</b></div>
+      <div class="stat"><small>Decks left</small><b id="decks">6.0</b></div>
+      <div class="stat"><small>Strategy</small><b id="acc">–</b></div>
+    </div>
+    <div class="tray" title="Cards dealt from the shoe; the red mark is the cut card"><i id="tray"></i><u id="cut"></u></div>
+    <label class="row"><input type="checkbox" id="show-count"> Show the count (tap a blurred number to peek)</label>
+  </section>
+
+  <section id="view-drill" class="panel" hidden>
+    <h2>Count drill</h2>
+    <p>Cards flip one at a time. Keep the Hi-Lo count in your head: 2 to 6 are +1, 7 to 9 are 0, tens and aces are -1. Enter the count when they stop.</p>
+    <div class="row">
+      <label>Cards <select id="d-n"><option>10</option><option selected>20</option><option>26</option><option>52</option></select></label>
+      <label>Speed <select id="d-speed"><option value="1500">slow</option><option value="900" selected>table</option><option value="550">fast</option><option value="350">pro</option></select></label>
+      <button class="btn primary" id="d-start">Start</button>
+    </div>
+    <div class="bigcard" id="d-card"></div>
+    <div class="quiz" id="d-quiz" hidden></div>
+    <div class="seq" id="d-seq"></div>
+  </section>
+
+  <section id="view-tc" class="panel" hidden>
+    <h2>True count</h2>
+    <p>The true count is the running count per deck still in the shoe. Read the decks left off the discard tray, divide, and round the way your settings say.</p>
+    <div class="countbar">
+      <div class="stat"><small>Running count</small><b id="t-rc">0</b></div>
+      <div class="stat"><small>Decks left</small><b id="t-decks">0</b></div>
+    </div>
+    <div class="tray"><i id="t-tray"></i></div>
+    <div class="row"><label>Your true count <input id="t-answer" type="number" inputmode="numeric"></label><button class="btn primary" id="t-check">Check</button><button class="btn" id="t-next">Next</button></div>
+    <div class="msg" id="t-msg"></div>
+  </section>
+
+  <section id="view-chart" class="panel" hidden>
+    <h2>Basic strategy</h2>
+    <p id="chart-note"></p>
+    <div class="legend"><span><i style="background:#e9e4d6"></i>Hit</span><span><i style="background:#e3b44b"></i>Stand</span><span><i style="background:#73d6a0"></i>Double (Ds: else stand)</span><span><i style="background:#8fb7ff"></i>Split</span><span><i style="background:#ff8a78"></i>Surrender (then h, s or p)</span><span>Outlined: a close call</span></div>
+    <div class="chartwrap" id="chart"></div>
+    <div class="msg mono" id="chart-ev">Tap a square for the numbers behind it.</div>
+  </section>
+
+  <section id="view-rules" class="panel" hidden>
+    <h2>Table rules</h2>
+    <div class="settings">
+      <label>Decks <select id="r-decks"><option>1</option><option>2</option><option>4</option><option selected>6</option><option>8</option></select></label>
+      <label>Dealer soft 17 <select id="r-h17"><option value="false">stands</option><option value="true">hits</option></select></label>
+      <label>Blackjack pays <select id="r-bj"><option value="1.5">3 to 2</option><option value="1.2">6 to 5</option></select></label>
+      <label>Double after split <select id="r-das"><option value="true">yes</option><option value="false">no</option></select></label>
+      <label>Late surrender <select id="r-sur"><option value="true">yes</option><option value="false">no</option></select></label>
+      <label>Cut card at <select id="r-pen"><option value="0.65">65%</option><option value="0.75" selected>75%</option><option value="0.83">83%</option></select></label>
+      <label>True count rounding <select id="r-round"><option value="floor">round down</option><option value="trunc">toward zero</option></select></label>
+      <label>Count check every <select id="r-quiz"><option value="0">never</option><option value="3">3 hands</option><option value="5" selected>5 hands</option><option value="10">10 hands</option></select></label>
+    </div>
+    <p>Changing the rules starts a fresh shoe.</p>
+    <h2>Your numbers</h2>
+    <div class="countbar" id="stats"></div>
+    <div class="row"><button class="btn" id="reset">Reset bankroll and stats</button><span class="msg" id="reset-msg"></span></div>
+  </section>
+
+  <footer>Basic strategy here is computed from the rules (an infinite deck, the dealer peeking for blackjack) and checked against simulation. It is for practice: real tables vary.</footer>
+</div>
