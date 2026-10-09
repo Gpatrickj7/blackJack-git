@@ -3,14 +3,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-/* Layout: one column the width of a blackjack table seen from the player's seat: tabs, the felt, the rail of controls under it. */
+/* A card room at night: green felt, a dark wooden rail, brass for what you act on. One look on purpose, in any theme. */
 :root {
   color-scheme: dark;
-  --felt: #0e3a2c; --felt-hi: #15503d; --felt-line: rgba(241, 234, 216, 0.22); --arc: rgba(241, 234, 216, 0.55);
-  --rail: #24160f; --rail-hi: #3a2519;
+  --felt: #0e3a2c; --felt-hi: #17573f; --felt-lo: #0a2c21; --felt-line: rgba(241, 234, 216, 0.22); --arc: rgba(241, 234, 216, 0.6);
+  --rail: #1d120c; --rail-hi: #33211a; --rail-top: #4a3024;
   --ink: #f1ead8; --muted: #a8bcae;
   --gold: #e3b44b; --gold-ink: #2b1d05;
-  --card: #fbf8f0; --card-ink: #17171b; --suit-red: #c22f28;
+  --card: #fbf8f0; --card-ink: #17171b; --suit-red: #c22f28; --back-a: #7a1d17; --back-b: #96261e;
   --good: #73d6a0; --bad: #ff8a78; --warn: #f2c94c;
   --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
   --body: "Figtree", "Segoe UI", system-ui, sans-serif;
@@ -20,68 +20,124 @@
 [hidden] { display: none !important; }
 html, body { background: var(--rail); }
 body { margin: 0; color: var(--ink); font: 15px/1.5 var(--body); padding-inline: 16px; padding-block: 12px 28px; }
-.wrap { max-width: 760px; margin: 0 auto; display: grid; gap: 14px; }
-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-h1 { font: 800 clamp(26px, 6vw, 36px)/1 var(--display); letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+.wrap { max-width: 880px; margin: 0 auto; display: grid; gap: 12px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 { font: 800 clamp(26px, 6vw, 36px)/1 var(--display); letter-spacing: -0.02em; margin: 0; }
 h1 span { color: var(--gold); }
-.bank { font: 700 15px var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); }
-.bank b { color: var(--ink); }
+.bank { display: flex; gap: 14px; align-items: baseline; font: 700 14px var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); flex-wrap: wrap; }
+.bank b { color: var(--ink); font-size: 18px; }
+.pill { font: 600 11px var(--body); letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; background: var(--rail-hi); color: var(--gold); }
 nav { display: flex; gap: 4px; background: var(--rail-hi); padding: 4px; border-radius: 12px; overflow-x: auto; }
 nav button { flex: 1 0 auto; border: 0; background: transparent; color: var(--muted); font: 600 14px var(--body); padding: 9px 12px; border-radius: 9px; cursor: pointer; }
 nav button[aria-selected="true"] { background: var(--felt); color: var(--ink); }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.felt { background: radial-gradient(120% 90% at 50% 0%, var(--felt-hi), var(--felt) 70%); border-radius: 22px; padding: 18px 16px 20px; display: grid; gap: 14px; box-shadow: inset 0 0 0 3px var(--rail-hi), 0 10px 30px rgba(0, 0, 0, 0.35); }
-.zone { display: grid; gap: 6px; min-height: 128px; }
-.zone h2 { margin: 0; font: 600 12px var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; align-items: baseline; }
-.zone h2 .total { font: 700 15px var(--mono); letter-spacing: 0; color: var(--ink); }
-.hands { display: flex; gap: 18px; flex-wrap: wrap; }
-.hand { display: grid; gap: 4px; padding: 6px; border-radius: 12px; }
+
+/* the table bar: which table, its limits and heat */
+.tablebar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; background: var(--rail-hi); border-radius: 14px; padding: 8px 12px; }
+.tablebar select { font: 700 14px var(--body); background: var(--rail); color: var(--ink); border: 1px solid var(--felt-line); border-radius: 9px; padding: 6px 8px; }
+.tablebar .lim { font: 700 13px var(--mono); color: var(--muted); }
+.tablebar .edge { font: 600 13px var(--body); color: var(--muted); }
+.tablebar .edge b { font-family: var(--mono); color: var(--ink); }
+.heat { display: flex; align-items: center; gap: 8px; margin-left: auto; font: 600 12px var(--body); color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.heat .bar { width: 110px; height: 8px; border-radius: 4px; background: var(--rail); overflow: hidden; }
+.heat .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--warn), var(--bad)); width: 0; transition: width 0.3s; }
+
+/* the felt */
+.felt { background: radial-gradient(130% 100% at 50% 0%, var(--felt-hi), var(--felt) 60%, var(--felt-lo)); border-radius: 26px 26px 120px 120px / 26px 26px 60px 60px; padding: 14px 14px 22px; display: grid; gap: 12px; box-shadow: inset 0 0 0 4px var(--rail-top), inset 0 0 0 8px var(--rail), 0 12px 34px rgba(0, 0, 0, 0.45); }
+.top { display: grid; grid-template-columns: 64px 1fr 64px; align-items: start; gap: 8px; }
+.discards, .shoebox { display: grid; justify-items: center; gap: 4px; font: 600 10px var(--body); color: var(--arc); letter-spacing: 0.08em; text-transform: uppercase; text-align: center; }
+.discards .well { width: 44px; height: 64px; border-radius: 6px; border: 1px solid var(--felt-line); position: relative; overflow: hidden; background: rgba(0, 0, 0, 0.15); }
+.discards .well i { position: absolute; inset: auto 3px 3px 3px; background: repeating-linear-gradient(0deg, var(--card) 0 2px, #d9d3c4 2px 3px); border-radius: 3px; height: 0; transition: height 0.4s; }
+.shoebox .box { width: 50px; height: 64px; border-radius: 6px 14px 6px 6px; background: linear-gradient(160deg, #2a2a30, #121216); box-shadow: inset 0 0 0 2px #3b3b44; position: relative; overflow: hidden; }
+.shoebox .box i { position: absolute; inset: auto 4px 4px 4px; background: repeating-linear-gradient(0deg, var(--back-a) 0 2px, var(--back-b) 2px 3px); border-radius: 3px; transition: height 0.4s; }
+.shoebox .box u { position: absolute; left: 2px; right: 2px; height: 2px; background: var(--warn); }
+.dealerzone { display: grid; justify-items: center; gap: 6px; min-height: 120px; }
+.zonehead { font: 600 12px var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; align-items: baseline; }
+.zonehead .total { font: 700 15px var(--mono); letter-spacing: 0; color: var(--ink); }
+.arc { text-align: center; font: 600 11px var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--arc); border-block: 1px solid var(--felt-line); padding-block: 6px; text-wrap: balance; }
+.arc b { color: var(--gold); font-weight: 600; }
+.seats { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.seat { min-width: 0; flex: 0 1 auto; display: grid; justify-items: center; gap: 4px; padding: 8px; border-radius: 16px; border: 1px dashed var(--felt-line); min-height: 132px; align-content: start; }
+.seat.me { border: 2px solid var(--gold); background: rgba(227, 180, 75, 0.06); }
+.seat.turn { box-shadow: 0 0 0 3px rgba(227, 180, 75, 0.35); }
+.seat .who { font: 600 11px var(--body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.seat.me .who { color: var(--gold); }
+.seat .hands { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.hand { display: grid; justify-items: center; gap: 3px; padding: 4px; border-radius: 10px; }
 .hand.active { box-shadow: 0 0 0 2px var(--gold); }
-.hand .meta { font: 600 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
-.cards { display: flex; }
-.card { width: 58px; height: 82px; border-radius: 7px; background: var(--card); color: var(--card-ink); display: grid; grid-template-rows: auto 1fr; padding: 4px 6px; font: 800 18px/1 var(--display); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); margin-right: -18px; animation: deal 0.18s ease-out; }
+.hand .meta { font: 600 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; text-align: center; }
+.hand .res { font: 700 12px var(--body); }
+.res.win, .res.blackjack { color: var(--good); } .res.lose, .res.bust { color: var(--bad); } .res.push, .res.surrender { color: var(--warn); }
+.chipstack { display: flex; align-items: center; gap: 4px; font: 700 12px var(--mono); color: var(--ink); }
+.chipstack i { width: 16px; height: 16px; border-radius: 50%; border: 2px dashed rgba(255, 255, 255, 0.7); background: var(--gold); }
+.cards { display: flex; min-height: 82px; }
+.card { width: 58px; height: 82px; border-radius: 7px; background: var(--card); color: var(--card-ink); display: grid; grid-template-rows: auto 1fr; padding: 4px 6px; font: 800 18px/1 var(--display); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); margin-right: -20px; }
 .card:last-child { margin-right: 0; }
+.card .corner { display: grid; justify-items: center; width: max-content; line-height: 0.95; }
+.card .corner i { font-style: normal; font-size: 0.72em; }
 .card .pip { align-self: end; justify-self: end; font-size: 26px; }
 .card.red { color: var(--suit-red); }
-.card.back { background: repeating-linear-gradient(45deg, #7a1d17 0 6px, #96261e 6px 12px); box-shadow: inset 0 0 0 4px var(--card), 0 2px 6px rgba(0, 0, 0, 0.35); }
-@keyframes deal { from { transform: translateY(-10px); opacity: 0; } to { transform: none; opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .card { animation: none; } }
-.arc { text-align: center; font: 600 11px var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--arc); border-block: 1px solid var(--felt-line); padding-block: 6px; }
-.arc b { color: var(--gold); font-weight: 600; }
-.msg { min-height: 24px; font-weight: 600; }
+.card.back { background: repeating-linear-gradient(45deg, var(--back-a) 0 6px, var(--back-b) 6px 12px); box-shadow: inset 0 0 0 4px var(--card), 0 2px 6px rgba(0, 0, 0, 0.35); }
+.card.new { animation: fly 0.32s cubic-bezier(0.2, 0.8, 0.3, 1); }
+.card.flip { animation: flip 0.32s ease-out; }
+.seat:not(.me) .card { width: 44px; height: 62px; font-size: 14px; margin-right: -18px; padding: 3px 4px; }
+.seat:not(.me) .card .pip { font-size: 19px; }
+.seat:not(.me) .cards { min-height: 62px; }
+@keyframes fly { from { transform: translate(min(36vw, 300px), -180px) rotate(-30deg) scale(0.7); opacity: 0.2; } to { transform: none; opacity: 1; } }
+@keyframes flip { from { transform: rotateY(90deg); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .card.new, .card.flip { animation: none; } }
+.msg { min-height: 24px; font-weight: 600; text-align: center; }
 .msg .good { color: var(--good); } .msg .bad { color: var(--bad); } .msg .warn { color: var(--warn); }
-.coach { font-size: 14px; color: var(--muted); min-height: 21px; }
+.coach { font-size: 14px; color: var(--muted); min-height: 21px; text-align: center; max-width: 70ch; justify-self: center; }
 .coach b { color: var(--ink); }
 .coach .miss { color: var(--bad); font-weight: 700; }
 .coach .hit { color: var(--good); font-weight: 700; }
+
 .controls { display: grid; gap: 10px; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.btn { border: 0; border-radius: 12px; padding: 12px 16px; font: 700 15px var(--body); cursor: pointer; background: var(--rail-hi); color: var(--ink); min-width: 74px; }
+.row.center { justify-content: center; }
+.btn { border: 0; border-radius: 12px; padding: 12px 16px; font: 700 15px var(--body); cursor: pointer; background: var(--rail-hi); color: var(--ink); min-width: 74px; min-height: 44px; }
 .btn.primary { background: var(--gold); color: var(--gold-ink); }
+.btn.small { min-width: 0; padding: 8px 12px; font-size: 13px; min-height: 36px; }
 .btn:disabled { opacity: 0.35; cursor: default; }
 .btn kbd { font: 500 11px var(--mono); opacity: 0.6; margin-left: 4px; }
-.chips { display: flex; gap: 6px; align-items: center; }
-.chip { width: 40px; height: 40px; border-radius: 50%; border: 3px dashed rgba(255, 255, 255, 0.6); font: 700 12px var(--mono); color: #fff; cursor: pointer; }
-.bet { font: 700 18px var(--mono); min-width: 70px; text-align: center; font-variant-numeric: tabular-nums; }
+.chips { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.chip { width: 44px; height: 44px; border-radius: 50%; border: 3px dashed rgba(255, 255, 255, 0.65); font: 700 12px var(--mono); color: #fff; cursor: pointer; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4); }
+.chip:active { transform: translateY(1px); }
+.bet { font: 700 20px var(--mono); min-width: 80px; text-align: center; font-variant-numeric: tabular-nums; }
 .countbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.stat { background: var(--rail-hi); border-radius: 12px; padding: 8px 10px; }
+.stat { background: var(--rail-hi); border-radius: 12px; padding: 8px 10px; min-width: 0; }
 .stat small { display: block; font: 600 11px var(--body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-.stat b { font: 700 20px var(--mono); font-variant-numeric: tabular-nums; }
-.stat.blur b { filter: blur(7px); }
-.tray { height: 8px; border-radius: 4px; background: var(--rail-hi); overflow: hidden; position: relative; }
-.tray i { position: absolute; inset: 0 auto 0 0; background: var(--gold); }
-.tray u { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--bad); }
-.quiz { background: var(--rail-hi); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
-.quiz input, .quiz select, .panel input, .panel select { font: 700 18px var(--mono); width: 110px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--felt-line); background: var(--rail); color: var(--ink); }
+.stat b { font: 700 20px var(--mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stat em { display: block; font: 500 12px var(--body); color: var(--muted); font-style: normal; }
+.stat.blur b { filter: blur(7px); cursor: pointer; }
+.stat.off b { visibility: hidden; }
+.quiz, .banner { background: var(--rail-hi); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
+.banner { border: 1px solid var(--bad); }
+.quiz input, .panel input, .panel select { font: 700 16px var(--mono); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--felt-line); background: var(--rail); color: var(--ink); }
+.quiz input { width: 110px; }
 .panel { background: var(--felt); border-radius: 18px; padding: 16px; display: grid; gap: 12px; }
 .panel h2 { margin: 0; font: 800 22px var(--display); }
-.panel p { margin: 0; color: var(--muted); max-width: 62ch; }
+.panel h3 { margin: 6px 0 0; font: 700 13px var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.panel p { margin: 0; color: var(--muted); max-width: 66ch; }
 .bigcard { display: flex; justify-content: center; min-height: 128px; align-items: center; }
 .bigcard .card { width: 84px; height: 118px; font-size: 26px; margin: 0; }
 .bigcard .card .pip { font-size: 38px; }
-.settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 18px; }
-.settings label { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.settings select, .settings input[type="number"] { font: 600 14px var(--body); width: auto; padding: 6px 8px; }
+.tray { height: 8px; border-radius: 4px; background: var(--rail-hi); overflow: hidden; position: relative; }
+.tray i { position: absolute; inset: 0 auto 0 0; background: var(--gold); }
+.settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px 18px; }
+.settings label { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 40px; }
+.settings select, .settings input[type="number"] { font: 600 14px var(--body); width: auto; max-width: 60%; padding: 6px 8px; }
+.settings select:disabled { opacity: 0.5; }
+.edgebox { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; background: var(--rail-hi); border-radius: 12px; padding: 10px 12px; }
+.edgebox b { font: 700 22px var(--mono); }
+.edgebox span { color: var(--muted); font-size: 13px; }
+.tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 8px; }
+.tcard { background: var(--rail-hi); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; border: 2px solid transparent; cursor: pointer; text-align: left; color: var(--ink); font: 14px var(--body); }
+.tcard.on { border-color: var(--gold); }
+.tcard:disabled { opacity: 0.45; cursor: default; }
+.tcard strong { font: 700 15px var(--body); }
+.tcard small { color: var(--muted); }
 .chartwrap { overflow-x: auto; }
 table.chart { border-collapse: separate; border-spacing: 2px; font: 700 12px var(--mono); }
 table.chart th { color: var(--muted); font-weight: 600; padding: 2px 6px; }
@@ -94,54 +150,103 @@ td.close { box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.45); }
 .seq { display: flex; flex-wrap: wrap; gap: 4px; font: 600 13px var(--mono); }
 .seq span { padding: 2px 6px; border-radius: 6px; background: var(--rail-hi); }
 .seq .p { color: var(--good); } .seq .m { color: var(--bad); }
+/* the simulator */
+.ramp { display: grid; gap: 6px; }
+.ramp .r { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; }
+.ramp input { width: 72px; }
+.progress { height: 10px; border-radius: 5px; background: var(--rail-hi); overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; background: var(--gold); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.fig { background: var(--rail-hi); border-radius: 12px; padding: 10px; display: grid; gap: 6px; min-width: 0; }
+.fig h4 { margin: 0; font: 700 14px var(--body); }
+.fig p { font-size: 13px; }
+.fig svg { width: 100%; height: auto; display: block; }
+.fig svg text { font: 500 11px var(--mono); fill: var(--muted); }
+.fig svg .lbl { fill: var(--ink); font-weight: 700; }
 footer { color: var(--muted); font-size: 13px; }
-@media (max-width: 480px) { .card { width: 50px; height: 72px; font-size: 16px; } .card .pip { font-size: 22px; } .countbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } .btn { padding: 12px 12px; min-width: 64px; } }
+@media (pointer: coarse) { .btn kbd { display: none; } }
+@media (max-width: 560px) {
+  .card { width: 48px; height: 68px; font-size: 15px; margin-right: -18px; } .card .pip { font-size: 21px; } .cards { min-height: 68px; }
+  .seat:not(.me) .card { width: 36px; height: 52px; font-size: 12px; margin-right: -16px; } .seat:not(.me) .card .pip { font-size: 15px; } .seat:not(.me) .cards { min-height: 52px; }
+  .seat { padding: 6px; min-height: 110px; } .top { grid-template-columns: 52px 1fr 52px; }
+  .countbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } .btn { padding: 12px; min-width: 64px; } .heat { margin-left: 0; }
+}
 </style>
 
 <div class="wrap">
   <header>
     <h1>Shoe <span>Counter</span></h1>
-    <div class="bank">Bankroll <b id="bankroll">1,000</b></div>
+    <div class="bank"><span class="pill" id="mode-pill">Career</span><span>Bankroll <b id="bankroll">1,000</b></span><span id="best-wrap">Best <b id="best">1,000</b></span></div>
   </header>
   <nav role="tablist" aria-label="Sections">
-    <button role="tab" id="tab-play" aria-selected="true" data-tab="play">Play</button>
-    <button role="tab" id="tab-drill" aria-selected="false" data-tab="drill">Count drill</button>
-    <button role="tab" id="tab-tc" aria-selected="false" data-tab="tc">True count</button>
-    <button role="tab" id="tab-chart" aria-selected="false" data-tab="chart">Strategy</button>
-    <button role="tab" id="tab-rules" aria-selected="false" data-tab="rules">Rules &amp; stats</button>
+    <button role="tab" aria-selected="true" data-tab="play">Play</button>
+    <button role="tab" aria-selected="false" data-tab="sim">Sim</button>
+    <button role="tab" aria-selected="false" data-tab="drill">Count drill</button>
+    <button role="tab" aria-selected="false" data-tab="tc">True count</button>
+    <button role="tab" aria-selected="false" data-tab="chart">Strategy</button>
+    <button role="tab" aria-selected="false" data-tab="settings">Settings</button>
   </nav>
 
   <section id="view-play" class="controls">
+    <div class="tablebar">
+      <select id="table-pick" aria-label="Table"></select>
+      <span class="lim" id="limits"></span>
+      <span class="edge" id="table-edge"></span>
+      <span class="heat" id="heat-wrap" title="Heat is a game rule: raising your bet when the count is high warms the pit, and it cools by 2 a round">Heat <span class="bar"><i id="heat"></i></span></span>
+    </div>
     <div class="felt">
-      <div class="zone"><h2>Dealer <span class="total" id="dealer-total"></span></h2><div class="cards" id="dealer"></div></div>
+      <div class="top">
+        <div class="discards" title="The discard tray: cards already dealt"><div class="well"><i id="disc"></i></div><span id="disc-n">0 decks</span></div>
+        <div class="dealerzone"><div class="zonehead">Dealer <span class="total" id="dealer-total"></span></div><div class="cards" id="dealer"></div></div>
+        <div class="shoebox" title="The shoe; the yellow line is the cut card"><div class="box"><i id="shoe-fill"></i><u id="shoe-cut"></u></div><span id="shoe-n">6 decks</span></div>
+      </div>
       <div class="arc" id="arc"></div>
-      <div class="zone"><h2>You</h2><div class="hands" id="hands"></div></div>
+      <div class="seats" id="seats"></div>
       <div class="msg" id="msg"></div>
       <div class="coach" id="coach"></div>
     </div>
-    <div class="row" id="actions">
-      <button class="btn" id="a-hit" data-move="hit">Hit<kbd>H</kbd></button>
-      <button class="btn" id="a-stand" data-move="stand">Stand<kbd>S</kbd></button>
-      <button class="btn" id="a-double" data-move="double">Double<kbd>D</kbd></button>
-      <button class="btn" id="a-split" data-move="split">Split<kbd>P</kbd></button>
-      <button class="btn" id="a-surrender" data-move="surrender">Surrender<kbd>R</kbd></button>
-      <button class="btn" id="a-ins-yes" data-ins="yes" hidden>Insure</button>
-      <button class="btn" id="a-ins-no" data-ins="no" hidden>No insurance</button>
+    <div class="row center" id="actions">
+      <button class="btn" data-move="hit">Hit<kbd>H</kbd></button>
+      <button class="btn" data-move="stand">Stand<kbd>S</kbd></button>
+      <button class="btn" data-move="double">Double<kbd>D</kbd></button>
+      <button class="btn" data-move="split">Split<kbd>P</kbd></button>
+      <button class="btn" data-move="surrender">Surrender<kbd>R</kbd></button>
+      <button class="btn" id="a-ins-yes" hidden>Insure<kbd>I</kbd></button>
+      <button class="btn" id="a-ins-no" hidden>No insurance<kbd>N</kbd></button>
     </div>
-    <div class="row">
+    <div class="row center">
       <div class="chips" id="chips"></div>
       <span class="bet" id="bet">10</span>
+      <button class="btn small" id="bet-x2">x2</button>
+      <button class="btn small" id="bet-min">Min</button>
       <button class="btn primary" id="deal">Deal<kbd>Space</kbd></button>
     </div>
+    <div class="banner" id="banner" hidden></div>
     <div class="quiz" id="quiz" hidden></div>
     <div class="countbar">
-      <div class="stat blur" id="s-rc"><small>Running count</small><b id="rc">0</b></div>
-      <div class="stat blur" id="s-tc"><small>True count</small><b id="tc">0</b></div>
+      <div class="stat" id="s-rc"><small>Running count</small><b id="rc">0</b></div>
+      <div class="stat" id="s-tc"><small>True count</small><b id="tc">0</b></div>
       <div class="stat"><small>Decks left</small><b id="decks">6.0</b></div>
-      <div class="stat"><small>Strategy</small><b id="acc">–</b></div>
+      <div class="stat"><small>Book plays</small><b id="acc">–</b></div>
     </div>
-    <div class="tray" title="Cards dealt from the shoe; the red mark is the cut card"><i id="tray"></i><u id="cut"></u></div>
-    <label class="row"><input type="checkbox" id="show-count"> Show the count (tap a blurred number to peek)</label>
+  </section>
+
+  <section id="view-sim" class="panel" hidden>
+    <h2>Simulator</h2>
+    <p>Play thousands of rounds in a few seconds. Your seat plays the computed basic strategy and bets by the ramp below on the true count; the other seats play their styles. The rules are the ones in play now (<span id="sim-rules"></span>).</p>
+    <div class="settings">
+      <label>Rounds <select id="sim-n"><option value="20000">20,000</option><option value="100000" selected>100,000</option><option value="500000">500,000</option><option value="2000000">2,000,000</option></select></label>
+      <label>Other players <select id="sim-others"><option value="none">none: alone at the table</option><option value="table">the table's seats</option></select></label>
+      <label>Sit out below true count <select id="sim-wong"><option value="">never</option><option value="-1">-1</option><option value="0">0</option><option value="1">+1</option></select></label>
+      <label>Insure from true count <select id="sim-ins"><option value="">never</option><option value="3" selected>+3</option><option value="2">+2</option></select></label>
+      <label>Bankroll for risk of ruin <select id="sim-bank"><option value="200">200 units</option><option value="500">500 units</option><option value="1000" selected>1,000 units</option><option value="2000">2,000 units</option></select></label>
+    </div>
+    <h3>Bet ramp, in units</h3>
+    <div class="row"><button class="btn small" data-preset="flat">Flat, no count</button><button class="btn small" data-preset="r8">1 to 8</button><button class="btn small" data-preset="r12">1 to 12</button><button class="btn small" data-preset="r16">1 to 16</button></div>
+    <div class="ramp" id="ramp"></div>
+    <div class="row"><button class="btn primary" id="sim-run">Run</button><button class="btn" id="sim-stop" disabled>Stop</button><span class="mono" id="sim-status"></span></div>
+    <div class="progress"><i id="sim-bar"></i></div>
+    <div id="sim-out"></div>
   </section>
 
   <section id="view-drill" class="panel" hidden>
@@ -177,23 +282,34 @@ footer { color: var(--muted); font-size: 13px; }
     <div class="msg mono" id="chart-ev">Tap a square for the numbers behind it.</div>
   </section>
 
-  <section id="view-rules" class="panel" hidden>
-    <h2>Table rules</h2>
+  <section id="view-settings" class="panel" hidden>
+    <h2>Game</h2>
     <div class="settings">
-      <label>Decks <select id="r-decks"><option>1</option><option>2</option><option>4</option><option selected>6</option><option>8</option></select></label>
-      <label>Dealer soft 17 <select id="r-h17"><option value="false">stands</option><option value="true">hits</option></select></label>
-      <label>Blackjack pays <select id="r-bj"><option value="1.5">3 to 2</option><option value="1.2">6 to 5</option></select></label>
-      <label>Double after split <select id="r-das"><option value="true">yes</option><option value="false">no</option></select></label>
-      <label>Late surrender <select id="r-sur"><option value="true">yes</option><option value="false">no</option></select></label>
-      <label>Cut card at <select id="r-pen"><option value="0.65">65%</option><option value="0.75" selected>75%</option><option value="0.83">83%</option></select></label>
-      <label>True count rounding <select id="r-round"><option value="floor">round down</option><option value="trunc">toward zero</option></select></label>
-      <label>Count check every <select id="r-quiz"><option value="0">never</option><option value="3">3 hands</option><option value="5" selected>5 hands</option><option value="10">10 hands</option></select></label>
+      <label>Mode <select id="g-mode"><option value="career">Career: tables open as you win</option><option value="free">Free play: set your own rules</option></select></label>
+      <label>Speed <select id="g-speed"><option value="slow">slow</option><option value="normal">normal</option><option value="fast">fast</option><option value="instant">instant</option></select></label>
+      <label>Sound <select id="g-sound"><option value="true">on</option><option value="false">off</option></select></label>
+      <label>Coach <select id="g-coach"><option value="true">on: check every move</option><option value="false">off</option></select></label>
+      <label>Show the count <select id="g-count"><option value="shown">shown</option><option value="blur">blurred, tap to peek</option><option value="hidden">hidden</option></select></label>
+      <label>Count check every <select id="g-quiz"><option value="0">never</option><option value="3">3 rounds</option><option value="5">5 rounds</option><option value="10">10 rounds</option></select></label>
+      <label>True count rounding <select id="g-round"><option value="floor">round down</option><option value="trunc">toward zero</option></select></label>
     </div>
-    <p>Changing the rules starts a fresh shoe.</p>
+    <h3>Players at the table</h3>
+    <div class="settings" id="seat-settings">
+      <label>Seats <select id="p-seats"><option value="1">1 (just you)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="7">7 (a full table)</option></select></label>
+      <label>Your seat <select id="p-me"></select></label>
+    </div>
+    <div class="settings" id="styles"></div>
+    <h3>Tables</h3>
+    <p id="tables-note"></p>
+    <div class="tables" id="tables"></div>
+    <h3>Rules</h3>
+    <p id="rules-note"></p>
+    <div class="settings" id="rules"></div>
+    <div class="edgebox"><b id="edge-now">0%</b><span id="edge-said"></span></div>
     <h2>Your numbers</h2>
     <div class="countbar" id="stats"></div>
-    <div class="row"><button class="btn" id="reset">Reset bankroll and stats</button><span class="msg" id="reset-msg"></span></div>
+    <div class="row"><button class="btn" id="refill">Refill free-play bankroll</button><button class="btn" id="reset">Start a new career</button><span class="msg" id="reset-msg"></span></div>
   </section>
 
-  <footer>Basic strategy here is computed from the rules (an infinite deck, the dealer peeking for blackjack) and checked against simulation. It is for practice: real tables vary.</footer>
+  <footer>Basic strategy and the house edge are computed from the rules (an infinite deck) and checked against simulation. The tables, career and heat are a game made up for this app, not any real casino. For practice and fun, not a system for winning money.</footer>
 </div>

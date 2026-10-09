@@ -10,14 +10,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-/* Layout: one column the width of a blackjack table seen from the player's seat: tabs, the felt, the rail of controls under it. */
+/* A card room at night: green felt, a dark wooden rail, brass for what you act on. One look on purpose, in any theme. */
 :root {
   color-scheme: dark;
-  --felt: #0e3a2c; --felt-hi: #15503d; --felt-line: rgba(241, 234, 216, 0.22); --arc: rgba(241, 234, 216, 0.55);
-  --rail: #24160f; --rail-hi: #3a2519;
+  --felt: #0e3a2c; --felt-hi: #17573f; --felt-lo: #0a2c21; --felt-line: rgba(241, 234, 216, 0.22); --arc: rgba(241, 234, 216, 0.6);
+  --rail: #1d120c; --rail-hi: #33211a; --rail-top: #4a3024;
   --ink: #f1ead8; --muted: #a8bcae;
   --gold: #e3b44b; --gold-ink: #2b1d05;
-  --card: #fbf8f0; --card-ink: #17171b; --suit-red: #c22f28;
+  --card: #fbf8f0; --card-ink: #17171b; --suit-red: #c22f28; --back-a: #7a1d17; --back-b: #96261e;
   --good: #73d6a0; --bad: #ff8a78; --warn: #f2c94c;
   --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
   --body: "Figtree", "Segoe UI", system-ui, sans-serif;
@@ -27,68 +27,124 @@
 [hidden] { display: none !important; }
 html, body { background: var(--rail); }
 body { margin: 0; color: var(--ink); font: 15px/1.5 var(--body); padding-inline: 16px; padding-block: 12px 28px; }
-.wrap { max-width: 760px; margin: 0 auto; display: grid; gap: 14px; }
-header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-h1 { font: 800 clamp(26px, 6vw, 36px)/1 var(--display); letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+.wrap { max-width: 880px; margin: 0 auto; display: grid; gap: 12px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 { font: 800 clamp(26px, 6vw, 36px)/1 var(--display); letter-spacing: -0.02em; margin: 0; }
 h1 span { color: var(--gold); }
-.bank { font: 700 15px var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); }
-.bank b { color: var(--ink); }
+.bank { display: flex; gap: 14px; align-items: baseline; font: 700 14px var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); flex-wrap: wrap; }
+.bank b { color: var(--ink); font-size: 18px; }
+.pill { font: 600 11px var(--body); letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 9px; border-radius: 99px; background: var(--rail-hi); color: var(--gold); }
 nav { display: flex; gap: 4px; background: var(--rail-hi); padding: 4px; border-radius: 12px; overflow-x: auto; }
 nav button { flex: 1 0 auto; border: 0; background: transparent; color: var(--muted); font: 600 14px var(--body); padding: 9px 12px; border-radius: 9px; cursor: pointer; }
 nav button[aria-selected="true"] { background: var(--felt); color: var(--ink); }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.felt { background: radial-gradient(120% 90% at 50% 0%, var(--felt-hi), var(--felt) 70%); border-radius: 22px; padding: 18px 16px 20px; display: grid; gap: 14px; box-shadow: inset 0 0 0 3px var(--rail-hi), 0 10px 30px rgba(0, 0, 0, 0.35); }
-.zone { display: grid; gap: 6px; min-height: 128px; }
-.zone h2 { margin: 0; font: 600 12px var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; align-items: baseline; }
-.zone h2 .total { font: 700 15px var(--mono); letter-spacing: 0; color: var(--ink); }
-.hands { display: flex; gap: 18px; flex-wrap: wrap; }
-.hand { display: grid; gap: 4px; padding: 6px; border-radius: 12px; }
+
+/* the table bar: which table, its limits and heat */
+.tablebar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; background: var(--rail-hi); border-radius: 14px; padding: 8px 12px; }
+.tablebar select { font: 700 14px var(--body); background: var(--rail); color: var(--ink); border: 1px solid var(--felt-line); border-radius: 9px; padding: 6px 8px; }
+.tablebar .lim { font: 700 13px var(--mono); color: var(--muted); }
+.tablebar .edge { font: 600 13px var(--body); color: var(--muted); }
+.tablebar .edge b { font-family: var(--mono); color: var(--ink); }
+.heat { display: flex; align-items: center; gap: 8px; margin-left: auto; font: 600 12px var(--body); color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.heat .bar { width: 110px; height: 8px; border-radius: 4px; background: var(--rail); overflow: hidden; }
+.heat .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--warn), var(--bad)); width: 0; transition: width 0.3s; }
+
+/* the felt */
+.felt { background: radial-gradient(130% 100% at 50% 0%, var(--felt-hi), var(--felt) 60%, var(--felt-lo)); border-radius: 26px 26px 120px 120px / 26px 26px 60px 60px; padding: 14px 14px 22px; display: grid; gap: 12px; box-shadow: inset 0 0 0 4px var(--rail-top), inset 0 0 0 8px var(--rail), 0 12px 34px rgba(0, 0, 0, 0.45); }
+.top { display: grid; grid-template-columns: 64px 1fr 64px; align-items: start; gap: 8px; }
+.discards, .shoebox { display: grid; justify-items: center; gap: 4px; font: 600 10px var(--body); color: var(--arc); letter-spacing: 0.08em; text-transform: uppercase; text-align: center; }
+.discards .well { width: 44px; height: 64px; border-radius: 6px; border: 1px solid var(--felt-line); position: relative; overflow: hidden; background: rgba(0, 0, 0, 0.15); }
+.discards .well i { position: absolute; inset: auto 3px 3px 3px; background: repeating-linear-gradient(0deg, var(--card) 0 2px, #d9d3c4 2px 3px); border-radius: 3px; height: 0; transition: height 0.4s; }
+.shoebox .box { width: 50px; height: 64px; border-radius: 6px 14px 6px 6px; background: linear-gradient(160deg, #2a2a30, #121216); box-shadow: inset 0 0 0 2px #3b3b44; position: relative; overflow: hidden; }
+.shoebox .box i { position: absolute; inset: auto 4px 4px 4px; background: repeating-linear-gradient(0deg, var(--back-a) 0 2px, var(--back-b) 2px 3px); border-radius: 3px; transition: height 0.4s; }
+.shoebox .box u { position: absolute; left: 2px; right: 2px; height: 2px; background: var(--warn); }
+.dealerzone { display: grid; justify-items: center; gap: 6px; min-height: 120px; }
+.zonehead { font: 600 12px var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; align-items: baseline; }
+.zonehead .total { font: 700 15px var(--mono); letter-spacing: 0; color: var(--ink); }
+.arc { text-align: center; font: 600 11px var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--arc); border-block: 1px solid var(--felt-line); padding-block: 6px; text-wrap: balance; }
+.arc b { color: var(--gold); font-weight: 600; }
+.seats { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.seat { min-width: 0; flex: 0 1 auto; display: grid; justify-items: center; gap: 4px; padding: 8px; border-radius: 16px; border: 1px dashed var(--felt-line); min-height: 132px; align-content: start; }
+.seat.me { border: 2px solid var(--gold); background: rgba(227, 180, 75, 0.06); }
+.seat.turn { box-shadow: 0 0 0 3px rgba(227, 180, 75, 0.35); }
+.seat .who { font: 600 11px var(--body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.seat.me .who { color: var(--gold); }
+.seat .hands { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.hand { display: grid; justify-items: center; gap: 3px; padding: 4px; border-radius: 10px; }
 .hand.active { box-shadow: 0 0 0 2px var(--gold); }
-.hand .meta { font: 600 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
-.cards { display: flex; }
-.card { width: 58px; height: 82px; border-radius: 7px; background: var(--card); color: var(--card-ink); display: grid; grid-template-rows: auto 1fr; padding: 4px 6px; font: 800 18px/1 var(--display); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); margin-right: -18px; animation: deal 0.18s ease-out; }
+.hand .meta { font: 600 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; text-align: center; }
+.hand .res { font: 700 12px var(--body); }
+.res.win, .res.blackjack { color: var(--good); } .res.lose, .res.bust { color: var(--bad); } .res.push, .res.surrender { color: var(--warn); }
+.chipstack { display: flex; align-items: center; gap: 4px; font: 700 12px var(--mono); color: var(--ink); }
+.chipstack i { width: 16px; height: 16px; border-radius: 50%; border: 2px dashed rgba(255, 255, 255, 0.7); background: var(--gold); }
+.cards { display: flex; min-height: 82px; }
+.card { width: 58px; height: 82px; border-radius: 7px; background: var(--card); color: var(--card-ink); display: grid; grid-template-rows: auto 1fr; padding: 4px 6px; font: 800 18px/1 var(--display); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); margin-right: -20px; }
 .card:last-child { margin-right: 0; }
+.card .corner { display: grid; justify-items: center; width: max-content; line-height: 0.95; }
+.card .corner i { font-style: normal; font-size: 0.72em; }
 .card .pip { align-self: end; justify-self: end; font-size: 26px; }
 .card.red { color: var(--suit-red); }
-.card.back { background: repeating-linear-gradient(45deg, #7a1d17 0 6px, #96261e 6px 12px); box-shadow: inset 0 0 0 4px var(--card), 0 2px 6px rgba(0, 0, 0, 0.35); }
-@keyframes deal { from { transform: translateY(-10px); opacity: 0; } to { transform: none; opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .card { animation: none; } }
-.arc { text-align: center; font: 600 11px var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--arc); border-block: 1px solid var(--felt-line); padding-block: 6px; }
-.arc b { color: var(--gold); font-weight: 600; }
-.msg { min-height: 24px; font-weight: 600; }
+.card.back { background: repeating-linear-gradient(45deg, var(--back-a) 0 6px, var(--back-b) 6px 12px); box-shadow: inset 0 0 0 4px var(--card), 0 2px 6px rgba(0, 0, 0, 0.35); }
+.card.new { animation: fly 0.32s cubic-bezier(0.2, 0.8, 0.3, 1); }
+.card.flip { animation: flip 0.32s ease-out; }
+.seat:not(.me) .card { width: 44px; height: 62px; font-size: 14px; margin-right: -18px; padding: 3px 4px; }
+.seat:not(.me) .card .pip { font-size: 19px; }
+.seat:not(.me) .cards { min-height: 62px; }
+@keyframes fly { from { transform: translate(min(36vw, 300px), -180px) rotate(-30deg) scale(0.7); opacity: 0.2; } to { transform: none; opacity: 1; } }
+@keyframes flip { from { transform: rotateY(90deg); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .card.new, .card.flip { animation: none; } }
+.msg { min-height: 24px; font-weight: 600; text-align: center; }
 .msg .good { color: var(--good); } .msg .bad { color: var(--bad); } .msg .warn { color: var(--warn); }
-.coach { font-size: 14px; color: var(--muted); min-height: 21px; }
+.coach { font-size: 14px; color: var(--muted); min-height: 21px; text-align: center; max-width: 70ch; justify-self: center; }
 .coach b { color: var(--ink); }
 .coach .miss { color: var(--bad); font-weight: 700; }
 .coach .hit { color: var(--good); font-weight: 700; }
+
 .controls { display: grid; gap: 10px; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.btn { border: 0; border-radius: 12px; padding: 12px 16px; font: 700 15px var(--body); cursor: pointer; background: var(--rail-hi); color: var(--ink); min-width: 74px; }
+.row.center { justify-content: center; }
+.btn { border: 0; border-radius: 12px; padding: 12px 16px; font: 700 15px var(--body); cursor: pointer; background: var(--rail-hi); color: var(--ink); min-width: 74px; min-height: 44px; }
 .btn.primary { background: var(--gold); color: var(--gold-ink); }
+.btn.small { min-width: 0; padding: 8px 12px; font-size: 13px; min-height: 36px; }
 .btn:disabled { opacity: 0.35; cursor: default; }
 .btn kbd { font: 500 11px var(--mono); opacity: 0.6; margin-left: 4px; }
-.chips { display: flex; gap: 6px; align-items: center; }
-.chip { width: 40px; height: 40px; border-radius: 50%; border: 3px dashed rgba(255, 255, 255, 0.6); font: 700 12px var(--mono); color: #fff; cursor: pointer; }
-.bet { font: 700 18px var(--mono); min-width: 70px; text-align: center; font-variant-numeric: tabular-nums; }
+.chips { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.chip { width: 44px; height: 44px; border-radius: 50%; border: 3px dashed rgba(255, 255, 255, 0.65); font: 700 12px var(--mono); color: #fff; cursor: pointer; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4); }
+.chip:active { transform: translateY(1px); }
+.bet { font: 700 20px var(--mono); min-width: 80px; text-align: center; font-variant-numeric: tabular-nums; }
 .countbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.stat { background: var(--rail-hi); border-radius: 12px; padding: 8px 10px; }
+.stat { background: var(--rail-hi); border-radius: 12px; padding: 8px 10px; min-width: 0; }
 .stat small { display: block; font: 600 11px var(--body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
-.stat b { font: 700 20px var(--mono); font-variant-numeric: tabular-nums; }
-.stat.blur b { filter: blur(7px); }
-.tray { height: 8px; border-radius: 4px; background: var(--rail-hi); overflow: hidden; position: relative; }
-.tray i { position: absolute; inset: 0 auto 0 0; background: var(--gold); }
-.tray u { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--bad); }
-.quiz { background: var(--rail-hi); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
-.quiz input, .quiz select, .panel input, .panel select { font: 700 18px var(--mono); width: 110px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--felt-line); background: var(--rail); color: var(--ink); }
+.stat b { font: 700 20px var(--mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stat em { display: block; font: 500 12px var(--body); color: var(--muted); font-style: normal; }
+.stat.blur b { filter: blur(7px); cursor: pointer; }
+.stat.off b { visibility: hidden; }
+.quiz, .banner { background: var(--rail-hi); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
+.banner { border: 1px solid var(--bad); }
+.quiz input, .panel input, .panel select { font: 700 16px var(--mono); padding: 8px 10px; border-radius: 10px; border: 1px solid var(--felt-line); background: var(--rail); color: var(--ink); }
+.quiz input { width: 110px; }
 .panel { background: var(--felt); border-radius: 18px; padding: 16px; display: grid; gap: 12px; }
 .panel h2 { margin: 0; font: 800 22px var(--display); }
-.panel p { margin: 0; color: var(--muted); max-width: 62ch; }
+.panel h3 { margin: 6px 0 0; font: 700 13px var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.panel p { margin: 0; color: var(--muted); max-width: 66ch; }
 .bigcard { display: flex; justify-content: center; min-height: 128px; align-items: center; }
 .bigcard .card { width: 84px; height: 118px; font-size: 26px; margin: 0; }
 .bigcard .card .pip { font-size: 38px; }
-.settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 18px; }
-.settings label { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.settings select, .settings input[type="number"] { font: 600 14px var(--body); width: auto; padding: 6px 8px; }
+.tray { height: 8px; border-radius: 4px; background: var(--rail-hi); overflow: hidden; position: relative; }
+.tray i { position: absolute; inset: 0 auto 0 0; background: var(--gold); }
+.settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px 18px; }
+.settings label { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 40px; }
+.settings select, .settings input[type="number"] { font: 600 14px var(--body); width: auto; max-width: 60%; padding: 6px 8px; }
+.settings select:disabled { opacity: 0.5; }
+.edgebox { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; background: var(--rail-hi); border-radius: 12px; padding: 10px 12px; }
+.edgebox b { font: 700 22px var(--mono); }
+.edgebox span { color: var(--muted); font-size: 13px; }
+.tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 8px; }
+.tcard { background: var(--rail-hi); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; border: 2px solid transparent; cursor: pointer; text-align: left; color: var(--ink); font: 14px var(--body); }
+.tcard.on { border-color: var(--gold); }
+.tcard:disabled { opacity: 0.45; cursor: default; }
+.tcard strong { font: 700 15px var(--body); }
+.tcard small { color: var(--muted); }
 .chartwrap { overflow-x: auto; }
 table.chart { border-collapse: separate; border-spacing: 2px; font: 700 12px var(--mono); }
 table.chart th { color: var(--muted); font-weight: 600; padding: 2px 6px; }
@@ -101,54 +157,103 @@ td.close { box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.45); }
 .seq { display: flex; flex-wrap: wrap; gap: 4px; font: 600 13px var(--mono); }
 .seq span { padding: 2px 6px; border-radius: 6px; background: var(--rail-hi); }
 .seq .p { color: var(--good); } .seq .m { color: var(--bad); }
+/* the simulator */
+.ramp { display: grid; gap: 6px; }
+.ramp .r { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; }
+.ramp input { width: 72px; }
+.progress { height: 10px; border-radius: 5px; background: var(--rail-hi); overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; background: var(--gold); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.fig { background: var(--rail-hi); border-radius: 12px; padding: 10px; display: grid; gap: 6px; min-width: 0; }
+.fig h4 { margin: 0; font: 700 14px var(--body); }
+.fig p { font-size: 13px; }
+.fig svg { width: 100%; height: auto; display: block; }
+.fig svg text { font: 500 11px var(--mono); fill: var(--muted); }
+.fig svg .lbl { fill: var(--ink); font-weight: 700; }
 footer { color: var(--muted); font-size: 13px; }
-@media (max-width: 480px) { .card { width: 50px; height: 72px; font-size: 16px; } .card .pip { font-size: 22px; } .countbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } .btn { padding: 12px 12px; min-width: 64px; } }
+@media (pointer: coarse) { .btn kbd { display: none; } }
+@media (max-width: 560px) {
+  .card { width: 48px; height: 68px; font-size: 15px; margin-right: -18px; } .card .pip { font-size: 21px; } .cards { min-height: 68px; }
+  .seat:not(.me) .card { width: 36px; height: 52px; font-size: 12px; margin-right: -16px; } .seat:not(.me) .card .pip { font-size: 15px; } .seat:not(.me) .cards { min-height: 52px; }
+  .seat { padding: 6px; min-height: 110px; } .top { grid-template-columns: 52px 1fr 52px; }
+  .countbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } .btn { padding: 12px; min-width: 64px; } .heat { margin-left: 0; }
+}
 </style>
 
 <div class="wrap">
   <header>
     <h1>Shoe <span>Counter</span></h1>
-    <div class="bank">Bankroll <b id="bankroll">1,000</b></div>
+    <div class="bank"><span class="pill" id="mode-pill">Career</span><span>Bankroll <b id="bankroll">1,000</b></span><span id="best-wrap">Best <b id="best">1,000</b></span></div>
   </header>
   <nav role="tablist" aria-label="Sections">
-    <button role="tab" id="tab-play" aria-selected="true" data-tab="play">Play</button>
-    <button role="tab" id="tab-drill" aria-selected="false" data-tab="drill">Count drill</button>
-    <button role="tab" id="tab-tc" aria-selected="false" data-tab="tc">True count</button>
-    <button role="tab" id="tab-chart" aria-selected="false" data-tab="chart">Strategy</button>
-    <button role="tab" id="tab-rules" aria-selected="false" data-tab="rules">Rules &amp; stats</button>
+    <button role="tab" aria-selected="true" data-tab="play">Play</button>
+    <button role="tab" aria-selected="false" data-tab="sim">Sim</button>
+    <button role="tab" aria-selected="false" data-tab="drill">Count drill</button>
+    <button role="tab" aria-selected="false" data-tab="tc">True count</button>
+    <button role="tab" aria-selected="false" data-tab="chart">Strategy</button>
+    <button role="tab" aria-selected="false" data-tab="settings">Settings</button>
   </nav>
 
   <section id="view-play" class="controls">
+    <div class="tablebar">
+      <select id="table-pick" aria-label="Table"></select>
+      <span class="lim" id="limits"></span>
+      <span class="edge" id="table-edge"></span>
+      <span class="heat" id="heat-wrap" title="Heat is a game rule: raising your bet when the count is high warms the pit, and it cools by 2 a round">Heat <span class="bar"><i id="heat"></i></span></span>
+    </div>
     <div class="felt">
-      <div class="zone"><h2>Dealer <span class="total" id="dealer-total"></span></h2><div class="cards" id="dealer"></div></div>
+      <div class="top">
+        <div class="discards" title="The discard tray: cards already dealt"><div class="well"><i id="disc"></i></div><span id="disc-n">0 decks</span></div>
+        <div class="dealerzone"><div class="zonehead">Dealer <span class="total" id="dealer-total"></span></div><div class="cards" id="dealer"></div></div>
+        <div class="shoebox" title="The shoe; the yellow line is the cut card"><div class="box"><i id="shoe-fill"></i><u id="shoe-cut"></u></div><span id="shoe-n">6 decks</span></div>
+      </div>
       <div class="arc" id="arc"></div>
-      <div class="zone"><h2>You</h2><div class="hands" id="hands"></div></div>
+      <div class="seats" id="seats"></div>
       <div class="msg" id="msg"></div>
       <div class="coach" id="coach"></div>
     </div>
-    <div class="row" id="actions">
-      <button class="btn" id="a-hit" data-move="hit">Hit<kbd>H</kbd></button>
-      <button class="btn" id="a-stand" data-move="stand">Stand<kbd>S</kbd></button>
-      <button class="btn" id="a-double" data-move="double">Double<kbd>D</kbd></button>
-      <button class="btn" id="a-split" data-move="split">Split<kbd>P</kbd></button>
-      <button class="btn" id="a-surrender" data-move="surrender">Surrender<kbd>R</kbd></button>
-      <button class="btn" id="a-ins-yes" data-ins="yes" hidden>Insure</button>
-      <button class="btn" id="a-ins-no" data-ins="no" hidden>No insurance</button>
+    <div class="row center" id="actions">
+      <button class="btn" data-move="hit">Hit<kbd>H</kbd></button>
+      <button class="btn" data-move="stand">Stand<kbd>S</kbd></button>
+      <button class="btn" data-move="double">Double<kbd>D</kbd></button>
+      <button class="btn" data-move="split">Split<kbd>P</kbd></button>
+      <button class="btn" data-move="surrender">Surrender<kbd>R</kbd></button>
+      <button class="btn" id="a-ins-yes" hidden>Insure<kbd>I</kbd></button>
+      <button class="btn" id="a-ins-no" hidden>No insurance<kbd>N</kbd></button>
     </div>
-    <div class="row">
+    <div class="row center">
       <div class="chips" id="chips"></div>
       <span class="bet" id="bet">10</span>
+      <button class="btn small" id="bet-x2">x2</button>
+      <button class="btn small" id="bet-min">Min</button>
       <button class="btn primary" id="deal">Deal<kbd>Space</kbd></button>
     </div>
+    <div class="banner" id="banner" hidden></div>
     <div class="quiz" id="quiz" hidden></div>
     <div class="countbar">
-      <div class="stat blur" id="s-rc"><small>Running count</small><b id="rc">0</b></div>
-      <div class="stat blur" id="s-tc"><small>True count</small><b id="tc">0</b></div>
+      <div class="stat" id="s-rc"><small>Running count</small><b id="rc">0</b></div>
+      <div class="stat" id="s-tc"><small>True count</small><b id="tc">0</b></div>
       <div class="stat"><small>Decks left</small><b id="decks">6.0</b></div>
-      <div class="stat"><small>Strategy</small><b id="acc">–</b></div>
+      <div class="stat"><small>Book plays</small><b id="acc">–</b></div>
     </div>
-    <div class="tray" title="Cards dealt from the shoe; the red mark is the cut card"><i id="tray"></i><u id="cut"></u></div>
-    <label class="row"><input type="checkbox" id="show-count"> Show the count (tap a blurred number to peek)</label>
+  </section>
+
+  <section id="view-sim" class="panel" hidden>
+    <h2>Simulator</h2>
+    <p>Play thousands of rounds in a few seconds. Your seat plays the computed basic strategy and bets by the ramp below on the true count; the other seats play their styles. The rules are the ones in play now (<span id="sim-rules"></span>).</p>
+    <div class="settings">
+      <label>Rounds <select id="sim-n"><option value="20000">20,000</option><option value="100000" selected>100,000</option><option value="500000">500,000</option><option value="2000000">2,000,000</option></select></label>
+      <label>Other players <select id="sim-others"><option value="none">none: alone at the table</option><option value="table">the table's seats</option></select></label>
+      <label>Sit out below true count <select id="sim-wong"><option value="">never</option><option value="-1">-1</option><option value="0">0</option><option value="1">+1</option></select></label>
+      <label>Insure from true count <select id="sim-ins"><option value="">never</option><option value="3" selected>+3</option><option value="2">+2</option></select></label>
+      <label>Bankroll for risk of ruin <select id="sim-bank"><option value="200">200 units</option><option value="500">500 units</option><option value="1000" selected>1,000 units</option><option value="2000">2,000 units</option></select></label>
+    </div>
+    <h3>Bet ramp, in units</h3>
+    <div class="row"><button class="btn small" data-preset="flat">Flat, no count</button><button class="btn small" data-preset="r8">1 to 8</button><button class="btn small" data-preset="r12">1 to 12</button><button class="btn small" data-preset="r16">1 to 16</button></div>
+    <div class="ramp" id="ramp"></div>
+    <div class="row"><button class="btn primary" id="sim-run">Run</button><button class="btn" id="sim-stop" disabled>Stop</button><span class="mono" id="sim-status"></span></div>
+    <div class="progress"><i id="sim-bar"></i></div>
+    <div id="sim-out"></div>
   </section>
 
   <section id="view-drill" class="panel" hidden>
@@ -184,25 +289,36 @@ footer { color: var(--muted); font-size: 13px; }
     <div class="msg mono" id="chart-ev">Tap a square for the numbers behind it.</div>
   </section>
 
-  <section id="view-rules" class="panel" hidden>
-    <h2>Table rules</h2>
+  <section id="view-settings" class="panel" hidden>
+    <h2>Game</h2>
     <div class="settings">
-      <label>Decks <select id="r-decks"><option>1</option><option>2</option><option>4</option><option selected>6</option><option>8</option></select></label>
-      <label>Dealer soft 17 <select id="r-h17"><option value="false">stands</option><option value="true">hits</option></select></label>
-      <label>Blackjack pays <select id="r-bj"><option value="1.5">3 to 2</option><option value="1.2">6 to 5</option></select></label>
-      <label>Double after split <select id="r-das"><option value="true">yes</option><option value="false">no</option></select></label>
-      <label>Late surrender <select id="r-sur"><option value="true">yes</option><option value="false">no</option></select></label>
-      <label>Cut card at <select id="r-pen"><option value="0.65">65%</option><option value="0.75" selected>75%</option><option value="0.83">83%</option></select></label>
-      <label>True count rounding <select id="r-round"><option value="floor">round down</option><option value="trunc">toward zero</option></select></label>
-      <label>Count check every <select id="r-quiz"><option value="0">never</option><option value="3">3 hands</option><option value="5" selected>5 hands</option><option value="10">10 hands</option></select></label>
+      <label>Mode <select id="g-mode"><option value="career">Career: tables open as you win</option><option value="free">Free play: set your own rules</option></select></label>
+      <label>Speed <select id="g-speed"><option value="slow">slow</option><option value="normal">normal</option><option value="fast">fast</option><option value="instant">instant</option></select></label>
+      <label>Sound <select id="g-sound"><option value="true">on</option><option value="false">off</option></select></label>
+      <label>Coach <select id="g-coach"><option value="true">on: check every move</option><option value="false">off</option></select></label>
+      <label>Show the count <select id="g-count"><option value="shown">shown</option><option value="blur">blurred, tap to peek</option><option value="hidden">hidden</option></select></label>
+      <label>Count check every <select id="g-quiz"><option value="0">never</option><option value="3">3 rounds</option><option value="5">5 rounds</option><option value="10">10 rounds</option></select></label>
+      <label>True count rounding <select id="g-round"><option value="floor">round down</option><option value="trunc">toward zero</option></select></label>
     </div>
-    <p>Changing the rules starts a fresh shoe.</p>
+    <h3>Players at the table</h3>
+    <div class="settings" id="seat-settings">
+      <label>Seats <select id="p-seats"><option value="1">1 (just you)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="7">7 (a full table)</option></select></label>
+      <label>Your seat <select id="p-me"></select></label>
+    </div>
+    <div class="settings" id="styles"></div>
+    <h3>Tables</h3>
+    <p id="tables-note"></p>
+    <div class="tables" id="tables"></div>
+    <h3>Rules</h3>
+    <p id="rules-note"></p>
+    <div class="settings" id="rules"></div>
+    <div class="edgebox"><b id="edge-now">0%</b><span id="edge-said"></span></div>
     <h2>Your numbers</h2>
     <div class="countbar" id="stats"></div>
-    <div class="row"><button class="btn" id="reset">Reset bankroll and stats</button><span class="msg" id="reset-msg"></span></div>
+    <div class="row"><button class="btn" id="refill">Refill free-play bankroll</button><button class="btn" id="reset">Start a new career</button><span class="msg" id="reset-msg"></span></div>
   </section>
 
-  <footer>Basic strategy here is computed from the rules (an infinite deck, the dealer peeking for blackjack) and checked against simulation. It is for practice: real tables vary.</footer>
+  <footer>Basic strategy and the house edge are computed from the rules (an infinite deck) and checked against simulation. The tables, career and heat are a game made up for this app, not any real casino. For practice and fun, not a system for winning money.</footer>
 </div>
 
 <script type="module">
@@ -382,6 +498,7 @@ class Round {
     else if (handTotal(this.hand.cards).total === 21) this.advance(); // a split hand dealt to 21 stands by itself
   }
   finish() { // turn the hole card (or deal the dealer's second), the dealer draws if any hand is still live, then pay
+    this.flipSeq = this.seq; // the cards dealt from here on came after the hole card was turned
     if (this.rules.holeCard) this.seen(this.dealer[1]); else this.dealer.push(this.seen(this.draw()));
     this.holeShown = true;
     const live = this.hands.some((h) => !h.surrendered && handTotal(h.cards).total <= 21 && !isBlackjack(h.cards, h.fromSplit));
@@ -574,8 +691,134 @@ function chart(rules = RULES) {
   return { ups: UPS, rows };
 }
 
+// ---- bots.mjs
+// The other players at the table, and how a player bets with the count. Each style is a plain rule; only "book" and
+// "counter" play the computed basic strategy.
+
+
+
+const STYLES = {
+  book: { label: "Book", note: "basic strategy, flat bets" },
+  counter: { label: "Counter", note: "basic strategy, bets up with the true count, insures at +3" },
+  hunch: { label: "Never-bust", note: "stands on 12 or more, never doubles or splits" },
+  mimic: { label: "Copycat", note: "hits to 17 like the dealer, never doubles or splits" },
+  wild: { label: "Gut feel", note: "splits every pair, doubles 9 to 11, hits to 16, always insures" },
+};
+
+/** What a player of this style does with the hand in play. */
+function botMove(style, round) {
+  const opts = round.options(), h = round.hand, { total, soft } = handTotal(h.cards), can = (m) => opts.includes(m);
+  if (style === "hunch") return can("hit") && total < 12 ? "hit" : "stand";
+  if (style === "mimic") return can("hit") && (total < 17 || (total === 17 && soft && round.rules.hitSoft17)) ? "hit" : "stand";
+  if (style === "wild") { if (can("split")) return "split"; if (can("double") && total >= 9 && total <= 11) return "double"; return can("hit") && total < 16 ? "hit" : "stand"; }
+  return evaluate(h.cards, round.upcard.rank, opts, round.rules, round.handsOf(h.seat).length)[0][0];
+}
+/** Whether a player of this style takes insurance at this true count. */
+const botInsures = (style, tc) => style === "wild" || (style === "counter" && tc >= 3);
+
+/** A bet ramp: [true count from, units] pairs in rising order. The default is chosen, not a recommendation. */
+const SPREAD = [[-99, 1], [2, 2], [3, 4], [4, 6], [5, 8]];
+/** The units a ramp bets at a true count. */
+function betFor(spread, tc) { let u = spread[0]?.[1] ?? 1; for (const [t, units] of spread) if (tc >= t) u = units; return u; }
+
+// ---- sim.mjs
+// Many rounds played without a picture: the player's seat plays the computed basic strategy and bets by a ramp on the
+// true count; the other seats play their styles. Run it a chunk at a time (step) so a page stays responsive.
+
+
+
+
+const TC_MIN = -6, TC_MAX = 8;
+
+class Sim {
+  /**
+   * `rounds` is how many the run is meant to have (it sizes the bankroll trace); `spread` the bet ramp in units;
+   * `insureAt` the true count from which the player insures; `wongOut` a true count below which the player sits out
+   * (the seat is still dealt, as another player would be, but nothing is bet); `others` the styles of the other seats,
+   * seated before the player when `seat` says so.
+   */
+  constructor({ rules = RULES, rounds = 100000, seed = 1, spread = [[-99, 1]], insureAt = Infinity, wongOut = null, others = [], seat = 0, tcRound = "floor", infinite = false } = {}) {
+    this.rules = { ...RULES, ...rules }; this.rounds = rounds; this.spread = spread; this.insureAt = insureAt; this.wongOut = wongOut; this.tcRound = tcRound;
+    this.seat = Math.min(seat, others.length); this.styles = others.slice(); this.styles.splice(this.seat, 0, "me");
+    this.shoe = new Shoe({ decks: this.rules.decks, penetration: this.rules.penetration, rng: mulberry32(seed), infinite });
+    this.n = 0; this.played = 0; this.net = 0; this.net2 = 0; this.wagered = 0; this.flat = 0; this.flat2 = 0;
+    this.byTc = Array.from({ length: TC_MAX - TC_MIN + 1 }, () => ({ n: 0, net: 0, net2: 0 }));
+    this.every = Math.max(1, Math.ceil(rounds / 400)); this.trace = [0]; this.peak = 0; this.drawdown = 0; this.results = { blackjack: 0, win: 0, push: 0, lose: 0, bust: 0, surrender: 0 };
+  }
+  step(count) {
+    const r = this.rules, shoe = this.shoe;
+    for (let i = 0; i < count; i++) {
+      if (r.csm || shoe.pastCut) shoe.shuffle();
+      const tc = trueCount(shoe.runningCount, shoe.left, this.tcRound), out = this.wongOut != null && tc < this.wongOut, units = out ? 0 : betFor(this.spread, tc);
+      const round = new Round(shoe, r, this.styles.map((s) => (s === "me" ? units : 1)), { me: this.seat });
+      while (round.phase === "insurance") { const s = this.styles[round.turn]; round.takeInsurance(s === "me" ? !out && tc >= this.insureAt : botInsures(s, tc)); }
+      while (round.phase === "player") {
+        const s = this.styles[round.turn], h = round.hand;
+        round.act(s === "me" ? evaluate(h.cards, round.upcard.rank, round.options(), r, round.handsOf(h.seat).length)[0][0] : botMove(s, round));
+      }
+      this.played++;
+      if (out) continue;
+      const net = round.results.net, perUnit = net / units, b = this.byTc[Math.max(TC_MIN, Math.min(TC_MAX, Math.floor(tc))) - TC_MIN];
+      this.n++; this.net += net; this.net2 += net * net; this.wagered += units; this.flat += perUnit; this.flat2 += perUnit * perUnit;
+      b.n++; b.net += perUnit; b.net2 += perUnit * perUnit;
+      for (const h of round.results.hands) this.results[h.result]++;
+      if (this.net > this.peak) this.peak = this.net; this.drawdown = Math.max(this.drawdown, this.peak - this.net);
+      if (this.n % this.every === 0) this.trace.push(this.net);
+    }
+    return this;
+  }
+  get done() { return this.played >= this.rounds; }
+  /** The run so far: units won per round bet, its spread, per unit of the bets made, and the long-run risk of ruin. */
+  summary(bankrollUnits = 1000) {
+    const n = this.n || 1, ev = this.net / n, sd = Math.sqrt(Math.max(0, this.net2 / n - ev * ev)), se = sd / Math.sqrt(n);
+    const ror = ev <= 0 ? 1 : Math.exp((-2 * ev * bankrollUnits) / (sd * sd));
+    return { rounds: this.n, played: this.played, ev, se, sd, edge: this.net / (this.wagered || 1), avgBet: this.wagered / n, per100: 100 * ev, n0: ev > 0 ? (sd * sd) / (ev * ev) : Infinity, ror, drawdown: this.drawdown, net: this.net };
+  }
+}
+
+// ---- career.mjs
+// Career mode: a bankroll, tables with their own rules and limits that open as the bankroll grows, and heat. All of it
+// is a game made up for this app: the tables are not any real casino's, and heat is a game rule, not a model of how a
+// real casino watches its players.
+const START = 1000;
+
+/** The tables, cheapest first. `unlock` is the bankroll that opens one; once open it stays open. */
+const TABLES = [
+  { id: "shuffler", name: "Shuffle machine", min: 5, max: 500, unlock: 0, note: "6:5 blackjacks and a continuous shuffler: the count never builds",
+    rules: { decks: 6, hitSoft17: true, blackjackPays: 1.2, das: true, lateSurrender: false, csm: true } },
+  { id: "downtown", name: "Downtown", min: 5, max: 500, unlock: 0, note: "six decks, the dealer hits soft 17",
+    rules: { decks: 6, hitSoft17: true, blackjackPays: 1.5, das: true, lateSurrender: false, penetration: 0.75 } },
+  { id: "main", name: "Main floor", min: 10, max: 1000, unlock: 1500, note: "six decks, stands on soft 17, late surrender",
+    rules: { decks: 6, hitSoft17: false, blackjackPays: 1.5, das: true, lateSurrender: true, penetration: 0.75 } },
+  { id: "euro", name: "European room", min: 10, max: 1000, unlock: 1500, note: "no hole card: a dealer blackjack takes doubles and splits; double on 9 to 11",
+    rules: { decks: 6, hitSoft17: false, blackjackPays: 1.5, das: true, lateSurrender: false, holeCard: false, doubleOn: "9-11", penetration: 0.75 } },
+  { id: "double", name: "Double deck", min: 25, max: 2500, unlock: 3000, note: "two decks dealt to 65%",
+    rules: { decks: 2, hitSoft17: true, blackjackPays: 1.5, das: true, lateSurrender: false, penetration: 0.65 } },
+  { id: "single", name: "Single deck", min: 50, max: 2500, unlock: 6000, note: "one deck to 60%, no double after split, one split",
+    rules: { decks: 1, hitSoft17: true, blackjackPays: 1.5, das: false, lateSurrender: false, maxHands: 2, penetration: 0.6 } },
+  { id: "high", name: "High limit", min: 100, max: 10000, unlock: 20000, note: "six decks to 83%, surrender, resplit aces",
+    rules: { decks: 6, hitSoft17: false, blackjackPays: 1.5, das: true, lateSurrender: true, resplitAces: true, penetration: 0.83 } },
+];
+
+/** Heat at full: the pit asks you to leave that table for COOLDOWN rounds played elsewhere. */
+const BACKOFF = 100, COOLDOWN = 60;
+/**
+ * Heat after a round: it cools by 2 a round, and warms when the bet goes up while the true count is +2 or more (12 for
+ * every doubling of the bet), and by 4 more for a bet of eight table minimums or more at such a count.
+ */
+function heatAfter(heat, { bet, prevBet, min, tc }) {
+  let h = Math.max(0, heat - 2);
+  if (tc >= 2 && prevBet > 0 && bet > prevBet) h += 12 * Math.log2(bet / prevBet);
+  if (tc >= 2 && bet >= 8 * min) h += 4;
+  return Math.min(BACKOFF, h);
+}
+
 // ---- app.js
-// The trainer's screens. Everything about the game is in engine.mjs and strategy.mjs; this file only draws and listens.
+// The game's screens. Everything about blackjack is in engine.mjs and strategy.mjs, the other players in bots.mjs, the
+// simulator in sim.mjs and the career's tables in career.mjs; this file draws, listens and keeps the score.
+
+
+
 
 
 
@@ -583,96 +826,208 @@ const $ = (id) => document.getElementById(id);
 const store = { get(k, d) { try { const v = localStorage.getItem("shoecounter." + k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem("shoecounter." + k, JSON.stringify(v)); } catch {} } };
 const SUIT = { S: "♠", H: "♥", D: "♦", C: "♣" }, NAME = { hit: "Hit", stand: "Stand", double: "Double", split: "Split", surrender: "Surrender" };
 const money = (x) => (x < 0 ? "-" : "") + Math.abs(x).toLocaleString("en-US", { maximumFractionDigits: 2 });
+const signed = (x, d = 0) => (x > 0 ? "+" : x < 0 ? "-" : "") + Math.abs(x).toFixed(d);
+const houseText = (ret) => (ret <= 0 ? `House edge ${(-100 * ret).toFixed(2)}%` : `Player edge ${(100 * ret).toFixed(2)}%`);
+const pct = (x, d = 2) => `${x >= 0 ? "+" : "-"}${Math.abs(100 * x).toFixed(d)}%`;
+const wait = (ms) => (ms > 0 ? new Promise((r) => setTimeout(r, ms)) : Promise.resolve());
+const RULE_KEYS = Object.keys(RULES);
 
-let settings = { ...RULES, tcRound: "floor", quizEvery: 5, ...store.get("settings", {}) };
-let stats = { bankroll: 1000, hands: 0, decisions: 0, correct: 0, quizzes: 0, quizRight: 0, drills: 0, drillRight: 0, tcs: 0, tcRight: 0, ...store.get("stats", {}) };
-let shoe = newShoe(), round = null, bet = store.get("bet", 10), showCount = false;
-function newShoe() { return new Shoe({ decks: settings.decks, penetration: settings.penetration }); }
-const save = () => { store.set("settings", settings); store.set("stats", stats); store.set("bet", bet); };
+// ------------------------------------------------------------------ state
+const DEFAULTS = { ...RULES, tcRound: "floor", quizEvery: 5, mode: "career", speed: "normal", sound: true, coach: true, countView: "blur", seats: 3, mySeat: 1, styles: ["book", "hunch", "counter", "mimic", "wild", "book"], table: "downtown" };
+let settings = { ...DEFAULTS, ...store.get("settings", {}) };
+const freshStats = () => ({ bankroll: START, best: START, careers: 1, freeBank: 1000, hands: 0, decisions: 0, correct: 0, quizzes: 0, quizRight: 0, drills: 0, drillRight: 0, tcs: 0, tcRight: 0, won: 0, lost: 0, blackjacks: 0, backoffs: 0 });
+let stats = { ...freshStats(), ...store.get("stats", {}) };
+const freshCareer = () => ({ unlocked: TABLES.filter((t) => t.unlock === 0).map((t) => t.id), heat: {}, cooldown: {}, prevBet: 0 });
+let career = { ...freshCareer(), ...store.get("career", {}) };
+let bet = store.get("bet", 10);
+const save = () => { store.set("settings", settings); store.set("stats", stats); store.set("career", career); store.set("bet", bet); };
 
-// ------------------------------------------------------------------ cards
-function cardEl(c, hidden = false) {
-  const el = document.createElement("div");
-  if (hidden) { el.className = "card back"; el.setAttribute("aria-label", "face-down card"); return el; }
-  el.className = "card" + (c.suit === "H" || c.suit === "D" ? " red" : "");
-  el.innerHTML = `<span>${c.rank}</span><span class="pip">${SUIT[c.suit]}</span>`;
-  el.setAttribute("aria-label", `${c.rank} of ${{ S: "spades", H: "hearts", D: "diamonds", C: "clubs" }[c.suit]}`);
-  return el;
+const careerMode = () => settings.mode === "career";
+const tableOf = () => TABLES.find((t) => t.id === settings.table) ?? TABLES[1];
+const rules = () => (careerMode() ? { ...RULES, ...tableOf().rules } : Object.fromEntries(RULE_KEYS.map((k) => [k, settings[k]])));
+const limits = () => (careerMode() ? { min: tableOf().min, max: tableOf().max } : { min: 1, max: 10000 });
+const bank = () => (careerMode() ? stats.bankroll : stats.freeBank);
+const addBank = (x) => { if (careerMode()) { stats.bankroll += x; stats.best = Math.max(stats.best, stats.bankroll); } else stats.freeBank += x; };
+const speedMs = () => ({ slow: [480, 750], normal: [260, 420], fast: [110, 160], instant: [0, 0] })[settings.speed] ?? [260, 420];
+
+let shoe = newShoe(), round = null, shown = 0, flipped = false, busy = false, quizDue = false;
+function newShoe() { const r = rules(); return new Shoe({ decks: r.decks, penetration: r.penetration }); }
+const tcNow = () => trueCount(shoe.runningCount, shoe.left, settings.tcRound);
+
+// ------------------------------------------------------------------ sound: made on the spot, nothing downloaded
+const sfx = (() => {
+  let ctx = null;
+  const ac = () => { if (!ctx) { const A = window.AudioContext || window.webkitAudioContext; if (!A) return null; ctx = new A(); } return ctx; };
+  const tone = (f, t0, dur, gain = 0.06, type = "sine") => { const c = ac(); if (!c) return; const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(gain, c.currentTime + t0); g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + t0 + dur); o.connect(g).connect(c.destination); o.start(c.currentTime + t0); o.stop(c.currentTime + t0 + dur + 0.02); };
+  const flick = () => { const c = ac(); if (!c) return; const n = Math.floor(c.sampleRate * 0.05), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n) ** 2; const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(); f.type = "bandpass"; f.frequency.value = 2400; f.Q.value = 0.8; g.gain.value = 0.35; s.buffer = b; s.connect(f).connect(g).connect(c.destination); s.start(); };
+  const go = (fn) => { if (!settings.sound) return; try { fn(); } catch {} };
+  return { card: () => go(flick), chip: () => go(() => { tone(2300, 0, 0.06, 0.05); tone(3100, 0.03, 0.06, 0.04); }), win: () => go(() => [523, 659, 784].forEach((f, i) => tone(f, i * 0.08, 0.22, 0.05, "triangle"))), lose: () => go(() => tone(196, 0, 0.3, 0.05, "triangle")), bj: () => go(() => [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.07, 0.3, 0.05, "triangle"))) };
+})();
+
+// ------------------------------------------------------------------ cards and seats
+function cardHtml(c, { back = false, anim = "" } = {}) {
+  if (back) return `<div class="card back ${anim}" aria-label="face-down card"></div>`;
+  const red = c.suit === "H" || c.suit === "D";
+  return `<div class="card${red ? " red" : ""} ${anim}" aria-label="${c.rank} of ${{ S: "spades", H: "hearts", D: "diamonds", C: "clubs" }[c.suit]}"><span class="corner">${c.rank}<i>${SUIT[c.suit]}</i></span><span class="pip">${SUIT[c.suit]}</span></div>`;
 }
-const totalText = (cards) => { const { total, soft } = handTotal(cards); return total > 21 ? `${total} bust` : soft && total < 21 ? `soft ${total}` : String(total); };
+const totalText = (cards) => { if (!cards.length) return ""; const { total, soft } = handTotal(cards); return total > 21 ? `${total} bust` : soft && total < 21 ? `soft ${total}` : String(total); };
+let animated = new Set();
+const anim = (c) => { if (animated.has(c.seq)) return ""; animated.add(c.seq); return "new"; };
+const visible = (cards) => cards.filter((c) => c.seq < shown);
+function seatPlan() { const n = Number(settings.seats), me = Math.min(Number(settings.mySeat), n - 1), out = []; let k = 0; for (let i = 0; i < n; i++) out.push(i === me ? "me" : settings.styles[k++ % settings.styles.length]); return { styles: out, me }; }
 
-// ------------------------------------------------------------------ the table
-function arc() {
-  const r = settings;
-  $("arc").innerHTML = `Blackjack pays <b>${r.blackjackPays === 1.5 ? "3 to 2" : "6 to 5"}</b> · Dealer ${r.hitSoft17 ? "hits" : "stands on"} soft 17 · Insurance pays 2 to 1 · ${r.decks} deck${r.decks > 1 ? "s" : ""}`;
-}
 function drawTable() {
-  const d = $("dealer"), h = $("hands"); d.replaceChildren(); h.replaceChildren();
-  if (!round) { $("dealer-total").textContent = ""; return; }
-  round.dealer.forEach((c, i) => d.append(cardEl(c, i === 1 && !round.holeShown)));
-  $("dealer-total").textContent = round.holeShown ? totalText(round.dealer) : `shows ${points(round.upcard.rank) === 11 ? "A" : points(round.upcard.rank)}`;
-  round.hands.forEach((hand, i) => {
-    const wrap = document.createElement("div"); wrap.className = "hand" + (round.phase === "player" && i === round.active && round.hands.length > 1 ? " active" : "");
-    const cards = document.createElement("div"); cards.className = "cards"; hand.cards.forEach((c) => cards.append(cardEl(c)));
-    const res = round.results?.hands[i], meta = document.createElement("div"); meta.className = "meta";
-    meta.textContent = `${totalText(hand.cards)} · bet ${money(hand.bet)}${res ? ` · ${res.result} ${res.net > 0 ? "+" : ""}${money(res.net)}` : ""}`;
-    wrap.append(cards, meta); h.append(wrap);
-  });
+  const r = rules(), R = round, d = $("dealer");
+  if (!R) { d.innerHTML = cardHtml(null, { back: true }); $("dealer-total").textContent = ""; }
+  else {
+    const vis = visible(R.dealer);
+    d.innerHTML = vis.map((c, i) => (i === 1 && r.holeCard && !flipped ? cardHtml(c, { back: true, anim: anim(c) }) : cardHtml(c, { anim: i === 1 && r.holeCard && flipped && !animated.has("flip") ? (animated.add("flip"), "flip") : anim(c) }))).join("");
+    const all = flipped || !r.holeCard, up = vis.length ? (points(vis[0].rank) === 11 ? "A" : points(vis[0].rank)) : "";
+    $("dealer-total").textContent = !vis.length ? "" : all && vis.length > 1 ? totalText(vis) : `shows ${up}`;
+  }
+  const plan = R ? { styles: R.styles, me: R.me } : seatPlan(), showRes = R && R.phase === "done" && !busy;
+  $("seats").innerHTML = plan.styles.map((style, seat) => {
+    const me = style === "me", label = me ? "You" : STYLES[style].label, turn = R && !busy && R.phase !== "done" && R.turn === seat;
+    let body = "";
+    if (R) {
+      const hands = R.hands.filter((h) => h.seat === seat), res = showRes ? R.results.seats[seat].hands : null;
+      body = `<div class="hands">${hands.map((h, i) => {
+        const vis = visible(h.cards), active = R.phase === "player" && R.hand === h && hands.length > 1 && !busy;
+        const rr = res?.[i], betTxt = `<span class="chipstack"><i></i>${money(h.bet)}</span>`;
+        return `<div class="hand${active ? " active" : ""}"><div class="cards">${vis.map((c) => cardHtml(c, { anim: anim(c) })).join("")}</div><div class="meta">${totalText(vis)}</div>${betTxt}${rr ? `<div class="res ${rr.result}">${rr.result} ${rr.net ? signed(rr.net, rr.net % 1 ? 2 : 0) : ""}</div>` : ""}</div>`;
+      }).join("")}</div>`;
+      if (showRes && R.results.seats[seat].insurance) body += `<div class="meta">insurance ${signed(R.results.seats[seat].insurance, 0)}</div>`;
+    } else body = `<div class="hands"><div class="cards"></div></div>${me ? `<span class="chipstack"><i></i>${money(bet)}</span>` : ""}`;
+    return `<div class="seat${me ? " me" : ""}${turn ? " turn" : ""}" title="${me ? "Your seat" : STYLES[style].note}"><div class="who">${label}</div>${body}</div>`;
+  }).join("");
+}
+function drawShoe() {
+  const dealt = shoe.next / shoe.size;
+  $("disc").style.height = `${Math.min(58, 58 * dealt)}px`; $("disc-n").textContent = `${(shoe.next / 52).toFixed(1)} dealt`;
+  $("shoe-fill").style.height = `${58 * (1 - dealt)}px`; $("shoe-cut").style.bottom = `${4 + 54 * (1 - shoe.penetration)}px`;
+  $("shoe-cut").hidden = rules().csm || shoe.next >= shoe.cut;
+  $("shoe-n").textContent = rules().csm ? "shuffler" : `${shoe.decksLeft.toFixed(1)} left`;
 }
 function drawCount() {
-  const rc = shoe.runningCount, tc = trueCount(rc, shoe.left, settings.tcRound);
-  $("rc").textContent = (rc > 0 ? "+" : "") + rc; $("tc").textContent = (tc > 0 ? "+" : "") + tc; $("decks").textContent = shoe.decksLeft.toFixed(1);
-  for (const id of ["s-rc", "s-tc"]) $(id).classList.toggle("blur", !showCount);
-  $("tray").style.width = `${(100 * shoe.next) / shoe.size}%`; $("cut").style.left = `${100 * shoe.penetration}%`;
+  const rc = shoe.runningCount, tc = tcNow(), v = settings.countView;
+  $("rc").textContent = signed(rc); $("tc").textContent = signed(tc); $("decks").textContent = shoe.decksLeft.toFixed(1);
+  for (const id of ["s-rc", "s-tc"]) { $(id).classList.toggle("blur", v === "blur"); $(id).classList.toggle("off", v === "hidden"); }
   $("acc").textContent = stats.decisions ? `${Math.round((100 * stats.correct) / stats.decisions)}%` : "–";
-  $("bankroll").textContent = money(stats.bankroll);
+  $("bankroll").textContent = money(bank()); $("best").textContent = money(stats.best);
+  $("mode-pill").textContent = careerMode() ? "Career" : "Free play"; $("best-wrap").hidden = !careerMode();
+}
+function drawBar() {
+  const t = tableOf(), L = limits(), r = rules();
+  $("table-pick").hidden = !careerMode();
+  if (careerMode()) $("table-pick").innerHTML = TABLES.map((x) => { const open = career.unlocked.includes(x.id), cd = career.cooldown[x.id] ?? 0; return `<option value="${x.id}"${x.id === t.id ? " selected" : ""}${open && !cd ? "" : " disabled"}>${x.name}${open ? (cd ? ` (closed to you: ${cd} rounds)` : "") : ` (opens at ${money(x.unlock)})`}</option>`; }).join("");
+  $("limits").textContent = `${money(L.min)} to ${money(L.max)}`;
+  $("table-edge").innerHTML = houseText(houseEdge(r)).replace(/ ([\d.]+%)$/, " <b>$1</b>");
+  $("heat-wrap").hidden = !careerMode(); $("heat").style.width = `${career.heat[t.id] ?? 0}%`;
+  const bj = r.blackjackPays === 1.5 ? "3 to 2" : r.blackjackPays === 1.2 ? "6 to 5" : "1 to 1";
+  $("arc").innerHTML = `Blackjack pays <b>${bj}</b> · Dealer ${r.hitSoft17 ? "hits" : "stands on"} soft 17 · ${r.holeCard ? "Insurance pays 2 to 1" : "<b>No hole card</b>"} · ${r.csm ? "<b>Continuous shuffler</b>" : `${r.decks} deck${r.decks > 1 ? "s" : ""}`}`;
 }
 function drawControls() {
-  const opts = round?.options() ?? [], ins = round?.phase === "insurance";
+  const mine = round && !busy && round.phase !== "done" && round.styles[round.turn] === "me";
+  const opts = mine && round.phase === "player" ? round.options() : [], ins = mine && round.phase === "insurance";
   for (const b of document.querySelectorAll("#actions [data-move]")) { b.disabled = !opts.includes(b.dataset.move); b.hidden = ins; }
   $("a-ins-yes").hidden = $("a-ins-no").hidden = !ins;
-  $("deal").disabled = !!round && round.phase !== "done" || !$("quiz").hidden;
+  const idle = !round || round.phase === "done";
+  $("deal").disabled = busy || !idle || !$("quiz").hidden || !$("banner").hidden;
+  for (const id of ["bet-x2", "bet-min"]) $(id).disabled = busy || !idle;
   $("bet").textContent = money(bet);
 }
-function render() { drawTable(); drawCount(); drawControls(); }
+function render() { drawBar(); drawTable(); drawShoe(); drawCount(); drawControls(); }
 
-// ------------------------------------------------------------------ playing
-function deal() {
-  if (round && round.phase !== "done") return;
-  let note = "";
-  if (shoe.pastCut) { shoe.shuffle(); note = "The cut card came out: new shoe, the count starts again at 0. "; }
-  round = new Round(shoe, settings, bet); $("coach").textContent = "";
-  $("msg").textContent = note + (round.phase === "insurance" ? "Dealer shows an ace. Insurance?" : "");
-  if (round.phase === "done") finish(); else render();
+// ------------------------------------------------------------------ a round
+async function reveal() {
+  const [card] = speedMs();
+  for (;;) {
+    if (round.holeShown && !flipped && shown >= round.flipSeq) { flipped = true; if (round.rules.holeCard) { render(); sfx.card(); await wait(card); } continue; }
+    if (shown >= round.seq) break;
+    shown++; render(); sfx.card(); await wait(card);
+  }
 }
-function act(move) {
-  if (!round || !round.options().includes(move)) return;
-  const hand = round.hand, ranked = evaluate(hand.cards, round.upcard.rank, round.options(), settings), best = ranked[0], mine = ranked.find(([m]) => m === move);
+async function drive() {
+  busy = true; render();
+  await reveal();
+  const [, think] = speedMs();
+  while (round.phase !== "done" && round.styles[round.turn] !== "me") {
+    await wait(think);
+    const style = round.styles[round.turn];
+    if (round.phase === "insurance") round.takeInsurance(botInsures(style, tcNow())); else round.act(botMove(style, round));
+    await reveal();
+  }
+  busy = false;
+  if (round.phase === "done") finish();
+  else { if (round.phase === "insurance") $("msg").textContent = "Dealer shows an ace. Insurance?"; render(); }
+}
+function deal() {
+  if (busy || (round && round.phase !== "done") || !$("quiz").hidden || !$("banner").hidden) return;
+  const L = limits(), t = tableOf();
+  if (careerMode() && (career.cooldown[t.id] ?? 0) > 0) { $("msg").innerHTML = `<span class="bad">The pit has asked you to leave ${t.name} for now.</span> Pick another table.`; return; }
+  bet = Math.max(L.min, Math.min(bet, L.max));
+  if (bet > bank()) { if (bank() >= L.min) bet = Math.floor(bank()); else { broke(); return; } }
+  let note = "";
+  if (rules().csm) { shoe.shuffle(); } else if (shoe.pastCut) { shoe.shuffle(); note = "The cut card came out: a new shoe, the count starts again at 0. "; }
+  const tc = tcNow(), { styles, me } = seatPlan();
+  round = new Round(shoe, rules(), styles.map((s) => (s === "me" ? bet : s === "counter" ? L.min * betFor(SPREAD, tc) : L.min)), { me });
+  round.styles = styles; round.tcAtDeal = tc; shown = 0; flipped = false; animated = new Set();
+  $("msg").textContent = note; $("coach").textContent = ""; sfx.chip();
+  drive();
+}
+function coachLine(move) {
+  const R = round, h = R.hand, opts = R.options(), ranked = evaluate(h.cards, R.upcard.rank, opts, R.rules, R.handsOf(h.seat).length), best = ranked[0], mine = ranked.find(([m]) => m === move);
   stats.decisions++; const right = move === best[0] || Math.abs(mine[1] - best[1]) < 1e-9; if (right) stats.correct++;
-  const gap = best[1] - mine[1], close = ranked.length > 1 && ranked[0][1] - ranked[1][1] < 0.01;
-  const label = `${totalText(hand.cards)} against ${round.upcard.rank}`;
+  if (!settings.coach) return;
+  const gap = best[1] - mine[1], close = ranked.length > 1 && ranked[0][1] - ranked[1][1] < 0.01, label = `${totalText(h.cards)} against ${R.upcard.rank}`;
   $("coach").innerHTML = right
     ? `<span class="hit">${NAME[move]}</span> on ${label} is the book play${close ? " (a close call)" : ""}.`
     : `<span class="miss">The book says ${NAME[best[0]]}</span> on ${label}: ${ranked.map(([m, ev]) => `${m} <b>${ev >= 0 ? "+" : ""}${ev.toFixed(3)}</b>`).join(", ")} per unit bet. ${NAME[move]} gives up ${gap.toFixed(3)}.`;
-  round.act(move);
-  if (round.phase === "done") finish(); else render();
+}
+function act(move) {
+  if (busy || !round || round.phase !== "player" || round.styles[round.turn] !== "me" || !round.options().includes(move)) return;
+  coachLine(move); if (move === "double" || move === "split") sfx.chip();
+  round.act(move); drive();
 }
 function insure(yes) {
-  if (round?.phase !== "insurance") return;
+  if (busy || round?.phase !== "insurance" || round.styles[round.turn] !== "me") return;
   // insurance pays 2 to 1, so it is worth taking only when more than a third of the unseen cards are tens
-  const unseen = shoe.cards.slice(shoe.next).concat([round.dealer[1]]), tens = unseen.filter((c) => points(c.rank) === 10).length, share = tens / unseen.length;
+  const unseen = shoe.unseen().concat(round.rules.holeCard ? [round.dealer[1]] : []), tens = unseen.filter((c) => points(c.rank) === 10).length, share = unseen.length ? tens / unseen.length : 4 / 13;
   round.takeInsurance(yes);
-  $("coach").innerHTML = `Insurance wins when more than 1 in 3 unseen cards are tens. Right now it was <b>${(100 * share).toFixed(1)}%</b> (${tens} of ${unseen.length}), so ${share > 1 / 3 ? "<b>taking it</b>" : "<b>declining</b>"} was right.`;
-  $("msg").textContent = "";
-  if (round.phase === "done") finish(); else render();
+  if (settings.coach) $("coach").innerHTML = `Insurance wins when more than 1 in 3 unseen cards are tens. Right now it was <b>${(100 * share).toFixed(1)}%</b>${unseen.length ? ` (${tens} of ${unseen.length})` : ""}, so ${share > 1 / 3 ? "<b>taking it</b>" : "<b>declining</b>"} was right.`;
+  $("msg").textContent = ""; drive();
 }
 function finish() {
-  const r = round.results; stats.bankroll += r.net; stats.hands++;
+  const R = round, r = R.results; addBank(r.net); stats.hands++;
+  for (const h of r.hands) { if (h.net > 0) stats.won++; if (h.net < 0) stats.lost++; if (h.result === "blackjack") stats.blackjacks++; }
   const lines = { blackjack: "Blackjack!", win: "You win", lose: "Dealer wins", bust: "Bust", push: "Push", surrender: "Surrendered" };
-  const each = r.hands.map((h) => lines[h.result]).join(" / ");
-  $("msg").innerHTML = `${r.dealerBlackjack ? "Dealer blackjack. " : ""}${each}. <span class="${r.net > 0 ? "good" : r.net < 0 ? "bad" : "warn"}">${r.net > 0 ? "+" : ""}${money(r.net)}</span>${r.insurance ? ` (insurance ${r.insurance > 0 ? "+" : ""}${money(r.insurance)})` : ""}`;
+  let extra = "";
+  if (careerMode()) {
+    const t = tableOf(), L = limits();
+    for (const x of TABLES) if (x.id !== t.id) { career.heat[x.id] = Math.max(0, (career.heat[x.id] ?? 0) - 1); if (career.cooldown[x.id]) career.cooldown[x.id]--; }
+    career.heat[t.id] = heatAfter(career.heat[t.id] ?? 0, { bet: R.bet, prevBet: career.prevBet, min: L.min, tc: R.tcAtDeal }); career.prevBet = R.bet;
+    if (career.heat[t.id] >= BACKOFF) { career.cooldown[t.id] = COOLDOWN; career.heat[t.id] = 40; stats.backoffs++; extra = ` <span class="bad">The pit boss has seen your bets jump with the count: you are asked to leave ${t.name} for ${COOLDOWN} rounds.</span>`; }
+    for (const x of TABLES) if (!career.unlocked.includes(x.id) && stats.bankroll >= x.unlock) { career.unlocked.push(x.id); extra += ` <span class="good">${x.name} is open to you now.</span>`; }
+  }
+  $("msg").innerHTML = `${r.dealerBlackjack ? "Dealer blackjack. " : ""}${r.hands.map((h) => lines[h.result]).join(" / ")}. <span class="${r.net > 0 ? "good" : r.net < 0 ? "bad" : "warn"}">${r.net > 0 ? "+" : ""}${money(r.net)}</span>${r.insurance ? ` (insurance ${r.insurance > 0 ? "+" : ""}${money(r.insurance)})` : ""}${extra}`;
+  if (r.hands.some((h) => h.result === "blackjack")) sfx.bj(); else if (r.net > 0) sfx.win(); else if (r.net < 0) sfx.lose();
   save(); render();
-  if (settings.quizEvery > 0 && stats.hands % settings.quizEvery === 0) askCount();
+  if (settings.quizEvery > 0 && stats.hands % settings.quizEvery === 0 && !rules().csm) askCount();
+  if (bank() < limits().min) broke();
+}
+function broke() {
+  const open = careerMode() && TABLES.some((x) => career.unlocked.includes(x.id) && !(career.cooldown[x.id] > 0) && x.min <= stats.bankroll);
+  const b = $("banner"); b.hidden = false;
+  b.innerHTML = careerMode()
+    ? `<b>${money(stats.bankroll)} will not cover the ${money(limits().min)} minimum here.</b> ${open ? "Try a cheaper table, or start over." : `The career ends with a best bankroll of ${money(stats.best)}.`}<div class="row">${open ? '<button class="btn" id="b-ok">Pick another table</button>' : ""}<button class="btn primary" id="b-new">Start a new career</button></div>`
+    : `<b>The free-play bankroll is spent.</b><div class="row"><button class="btn primary" id="b-new">Refill to 1,000</button></div>`;
+  $("b-new").onclick = () => { if (careerMode()) newCareer(); else { stats.freeBank = 1000; save(); } b.hidden = true; render(); };
+  if ($("b-ok")) $("b-ok").onclick = () => { b.hidden = true; render(); $("table-pick").focus(); };
+  drawControls();
+}
+function newCareer() {
+  stats.bankroll = START; stats.best = Math.max(stats.best, START); stats.careers++; career = freshCareer(); settings.table = "downtown"; bet = 10;
+  shoe = newShoe(); round = null; save(); render(); $("msg").textContent = `Career ${stats.careers}: ${money(START)} to start.`;
 }
 function askCount() {
   const q = $("quiz"); q.hidden = false;
@@ -681,18 +1036,87 @@ function askCount() {
   const done = () => { q.hidden = true; q.replaceChildren(); drawControls(); };
   $("q-skip").onclick = done;
   $("q-go").onclick = () => {
-    const v = Number($("q-rc").value), rc = shoe.runningCount, ok = v === rc, tc = trueCount(rc, shoe.left, settings.tcRound);
-    stats.quizzes++; if (ok) stats.quizRight++; save();
-    $("q-out").innerHTML = `${ok ? '<span class="good" style="color:var(--good)">Right.</span>' : `<span style="color:var(--bad)">It was ${rc > 0 ? "+" : ""}${rc}.</span>`} With ${shoe.decksLeft.toFixed(1)} decks left that is a true count of ${tc > 0 ? "+" : ""}${tc}.`;
+    const v = Number($("q-rc").value), rc = shoe.runningCount, good = v === rc, tc = tcNow();
+    stats.quizzes++; if (good) stats.quizRight++; save();
+    $("q-out").innerHTML = `${good ? '<span style="color:var(--good)">Right.</span>' : `<span style="color:var(--bad)">It was ${signed(rc)}.</span>`} With ${shoe.decksLeft.toFixed(1)} decks left that is a true count of ${signed(tc)}.`;
     $("q-go").remove(); $("q-skip").textContent = "Back to the table"; $("q-skip").focus();
   };
   $("q-rc").addEventListener("keydown", (e) => { if (e.key === "Enter") $("q-go")?.click(); });
 }
 
 // ------------------------------------------------------------------ bets
-const CHIPS = [[1, "#6b7a8f"], [5, "#b8322c"], [25, "#1f7a4d"], [100, "#1d1d22"]];
-for (const [v, col] of CHIPS) { const b = document.createElement("button"); b.className = "chip"; b.style.background = col; b.textContent = v; b.title = `Add ${v} (tap and hold to remove)`; b.onclick = () => { bet = Math.min(bet + v, 1000); save(); drawControls(); }; b.oncontextmenu = (e) => { e.preventDefault(); bet = Math.max(1, bet - v); save(); drawControls(); }; $("chips").append(b); }
-const clear = document.createElement("button"); clear.className = "btn"; clear.textContent = "Clear"; clear.onclick = () => { bet = 1; save(); drawControls(); }; $("chips").append(clear);
+const CHIPS = [[1, "#6b7a8f"], [5, "#b8322c"], [25, "#1f7a4d"], [100, "#1d1d22"], [500, "#6b3fa0"]];
+for (const [v, col] of CHIPS) {
+  const b = document.createElement("button"); b.className = "chip"; b.style.background = col; b.textContent = v; b.title = `Add ${v} (right-click to take off)`;
+  b.onclick = () => { if (busy || (round && round.phase !== "done")) return; bet = Math.min(bet + v, limits().max); sfx.chip(); save(); drawControls(); drawTable(); };
+  b.oncontextmenu = (e) => { e.preventDefault(); bet = Math.max(limits().min, bet - v); save(); drawControls(); drawTable(); };
+  $("chips").append(b);
+}
+$("bet-x2").onclick = () => { bet = Math.min(bet * 2, limits().max); sfx.chip(); save(); drawControls(); drawTable(); };
+$("bet-min").onclick = () => { bet = limits().min; save(); drawControls(); drawTable(); };
+
+// ------------------------------------------------------------------ the simulator
+let ramp = store.get("ramp", SPREAD.map((r) => r.slice())), simJob = null;
+const PRESETS = { flat: [[-99, 1]], r8: [[-99, 1], [2, 2], [3, 4], [4, 6], [5, 8]], r12: [[-99, 1], [1, 2], [2, 4], [3, 8], [4, 12]], r16: [[-99, 1], [1, 2], [2, 6], [3, 10], [4, 16]] };
+function drawRamp() {
+  $("ramp").innerHTML = ramp.map(([t, u], i) => `<div class="r">${i === 0 ? "Below the next step" : `From true count <input type="number" data-i="${i}" data-k="0" value="${t}" aria-label="true count">`} bet <input type="number" min="0" data-i="${i}" data-k="1" value="${u}" aria-label="units"> unit${u === 1 ? "" : "s"}${i ? ` <button class="btn small" data-del="${i}">Remove</button>` : ""}</div>`).join("") + `<div class="r"><button class="btn small" id="ramp-add">Add a step</button></div>`;
+  $("ramp-add").onclick = () => { const last = ramp[ramp.length - 1]; ramp.push([Math.max(1, (last[0] > -99 ? last[0] : 0) + 1), last[1] * 2]); store.set("ramp", ramp); drawRamp(); };
+}
+$("ramp").addEventListener("change", (e) => { const i = e.target.dataset.i; if (i == null) return; ramp[i][e.target.dataset.k] = Number(e.target.value); ramp = [ramp[0], ...ramp.slice(1).sort((a, b) => a[0] - b[0])]; store.set("ramp", ramp); drawRamp(); });
+$("ramp").addEventListener("click", (e) => { const i = e.target.dataset.del; if (i == null) return; ramp.splice(Number(i), 1); store.set("ramp", ramp); drawRamp(); });
+for (const b of document.querySelectorAll("[data-preset]")) b.onclick = () => { ramp = PRESETS[b.dataset.preset].map((r) => r.slice()); store.set("ramp", ramp); drawRamp(); };
+function ruleSummary(r) { return `${r.csm ? "continuous shuffler" : `${r.decks} deck${r.decks > 1 ? "s" : ""} cut at ${Math.round(100 * r.penetration)}%`}, ${r.hitSoft17 ? "H17" : "S17"}, blackjack ${r.blackjackPays === 1.5 ? "3:2" : r.blackjackPays === 1.2 ? "6:5" : "1:1"}${r.das ? ", double after split" : ""}${r.lateSurrender && r.holeCard ? ", late surrender" : ""}${r.holeCard ? "" : ", no hole card"}${r.doubleOn !== "any" ? `, double ${r.doubleOn}` : ""}${r.resplitAces ? ", resplit aces" : ""}${careerMode() ? ` (${tableOf().name})` : ""}`; }
+function runSim() {
+  if (simJob) return;
+  const r = rules(), n = Number($("sim-n").value), seed = (Math.random() * 2 ** 31) | 0, { styles, me } = seatPlan();
+  const others = $("sim-others").value === "table" ? styles.filter((s) => s !== "me") : [], wong = $("sim-wong").value, ins = $("sim-ins").value;
+  const sim = new Sim({ rules: r, rounds: n, seed, spread: ramp.map(([t, u]) => [t, Math.max(0, u)]), insureAt: ins === "" ? Infinity : Number(ins), wongOut: wong === "" ? null : Number(wong), others, seat: $("sim-others").value === "table" ? me : 0, tcRound: settings.tcRound });
+  simJob = { sim, stop: false, seed, rules: r, t0: performance.now() }; $("sim-run").disabled = true; $("sim-stop").disabled = false; $("sim-out").innerHTML = "";
+  const tick = () => {
+    if (simJob.stop || sim.done) { simJob = null; $("sim-run").disabled = false; $("sim-stop").disabled = true; drawSimResults(sim, r, seed); return; }
+    const t = performance.now(); while (!sim.done && performance.now() - t < 40) sim.step(Math.min(2000, sim.rounds - sim.played));
+    $("sim-bar").style.width = `${(100 * sim.played) / sim.rounds}%`; $("sim-status").textContent = `${sim.played.toLocaleString("en-US")} rounds`;
+    setTimeout(tick, 0);
+  };
+  tick();
+}
+function svgLine(points, w = 560, h = 200) {
+  const pad = { l: 52, r: 10, t: 10, b: 26 }, xs = points.map((p) => p[0]), ys = points.map((p) => p[1]);
+  const x0 = 0, x1 = Math.max(...xs, 1), y0 = Math.min(0, ...ys), y1 = Math.max(0, ...ys, 1);
+  const X = (x) => pad.l + ((x - x0) / (x1 - x0)) * (w - pad.l - pad.r), Y = (y) => pad.t + (1 - (y - y0) / (y1 - y0 || 1)) * (h - pad.t - pad.b);
+  const ticks = niceTicks(y0, y1, 4), xt = niceTicks(0, x1, 4);
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Units won or lost against rounds bet">
+    ${ticks.map((v) => `<line x1="${pad.l}" x2="${w - pad.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(241,234,216,${v === 0 ? 0.45 : 0.1})"/><text x="${pad.l - 6}" y="${Y(v) + 4}" text-anchor="end">${v.toLocaleString("en-US")}</text>`).join("")}
+    ${xt.map((v) => `<text x="${X(v)}" y="${h - 8}" text-anchor="middle">${v >= 1000 ? `${v / 1000}k` : v}</text>`).join("")}
+    <polyline fill="none" stroke="var(--gold)" stroke-width="2" points="${points.map(([x, y]) => `${X(x).toFixed(1)},${Y(y).toFixed(1)}`).join(" ")}"/></svg>`;
+}
+function niceTicks(a, b, n) { const span = b - a || 1, step0 = span / n, mag = 10 ** Math.floor(Math.log10(step0)), step = [1, 2, 5, 10].map((m) => m * mag).find((s) => s >= step0 * 0.999), out = []; for (let k = Math.ceil(a / step - 1e-9); k <= Math.floor(b / step + 1e-9); k++) out.push(Math.round(k * step * 1e9) / 1e9 || 0); return out; }
+function svgBars(rows, w = 560, h = 220) {
+  const pad = { l: 46, r: 10, t: 14, b: 40 }, vals = rows.map((r) => r.e), lo = Math.min(-0.02, ...vals), hi = Math.max(0.02, ...vals);
+  const bw = (w - pad.l - pad.r) / rows.length, Y = (v) => pad.t + (1 - (v - lo) / (hi - lo)) * (h - pad.t - pad.b), ticks = niceTicks(lo, hi, 5);
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Edge per unit bet at each true count">
+    ${ticks.map((v) => `<line x1="${pad.l}" x2="${w - pad.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(241,234,216,${Math.abs(v) < 1e-9 ? 0.45 : 0.1})"/><text x="${pad.l - 6}" y="${Y(v) + 4}" text-anchor="end">${(100 * v).toFixed(0)}%</text>`).join("")}
+    ${rows.map((r, i) => { const x = pad.l + i * bw + 2, y = Math.min(Y(r.e), Y(0)), hh = Math.max(1, Math.abs(Y(r.e) - Y(0))); return `<g><title>True count ${r.label}: ${pct(r.e)} per unit over ${r.n.toLocaleString("en-US")} rounds (${(100 * r.share).toFixed(1)}% of rounds)</title><rect x="${x}" y="${y}" width="${bw - 4}" height="${hh}" rx="3" fill="${r.e >= 0 ? "var(--good)" : "var(--bad)"}"/><text x="${x + (bw - 4) / 2}" y="${h - 24}" text-anchor="middle">${r.label}</text><text x="${x + (bw - 4) / 2}" y="${h - 8}" text-anchor="middle">${(100 * r.share).toFixed(0)}%</text></g>`; }).join("")}</svg>`;
+}
+function drawSimResults(sim, r, seed) {
+  const s = sim.summary(Number($("sim-bank").value)), edge0 = houseEdge(r), total = sim.byTc.reduce((a, b) => a + b.n, 0);
+  const rows = sim.byTc.map((b, i) => ({ tc: i + TC_MIN, label: i === 0 ? `${i + TC_MIN}-` : i === sim.byTc.length - 1 ? `+${i + TC_MIN}+` : signed(i + TC_MIN), n: b.n, e: b.n ? b.net / b.n : 0, share: b.n / (total || 1) })).filter((x) => x.n >= 200);
+  const tile = (k, v, note = "") => `<div class="stat"><small>${k}</small><b>${v}</b>${note ? `<em>${note}</em>` : ""}</div>`;
+  $("sim-out").innerHTML = `<div class="tiles">
+    ${tile("Rounds bet", s.rounds.toLocaleString("en-US"), s.played > s.rounds ? `of ${s.played.toLocaleString("en-US")} dealt` : `seed ${seed}`)}
+    ${tile("Per unit bet", pct(s.edge), `flat bets by the book: ${houseText(edge0).toLowerCase()} (infinite deck)`)}
+    ${tile("Units a round", `${signed(s.ev, 4)}`, `+/- ${s.se.toFixed(4)} (one standard error)`)}
+    ${tile("Per 100 rounds", `${signed(100 * s.ev, 2)} units`)}
+    ${tile("Average bet", `${s.avgBet.toFixed(2)} units`)}
+    ${tile("Swing per round", `${s.sd.toFixed(2)} units`, "standard deviation")}
+    ${tile("Biggest drop", `${s.drawdown.toFixed(0)} units`, "peak to trough")}
+    ${tile("Risk of ruin", s.ev > 0 ? `${(100 * s.ror).toFixed(s.ror < 0.01 ? 2 : 1)}%` : "certain", s.ev > 0 ? `with ${Number($("sim-bank").value).toLocaleString("en-US")} units, playing on forever (an approximation)` : "a losing game loses any bankroll in the long run")}
+  </div>
+  <div class="fig"><h4>Units won or lost, round by round</h4>${svgLine(sim.trace.map((y, i) => [i * sim.every, y]))}</div>
+  <div class="fig"><h4>What a flat bet earns at each true count</h4><p>Edge per unit bet, from these rounds; the second row of numbers is how often each count came up. Counts with fewer than 200 rounds are left out. Tap or hover a bar for its numbers.</p>${rows.length ? svgBars(rows) : "<p>Not enough rounds yet.</p>"}</div>
+  <p>Seed ${seed}, ${ruleSummary(r)}. The rounds are random, so two runs differ by about the standard error; a run of 2,000,000 rounds pins the edge to about a twentieth of a percent.</p>`;
+}
+$("sim-run").onclick = runSim; $("sim-stop").onclick = () => { if (simJob) simJob.stop = true; };
 
 // ------------------------------------------------------------------ count drill
 let drillTimer = null;
@@ -702,7 +1126,7 @@ function startDrill() {
   for (const suit of SUITS) for (const rank of RANKS) deck.push({ rank, suit });
   for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
   const cards = deck.slice(0, n); let i = 0;
-  const show = () => { $("d-card").replaceChildren(cardEl(cards[i])); i++; if (i >= cards.length) { clearInterval(drillTimer); setTimeout(() => askDrill(cards), Number($("d-speed").value)); } };
+  const show = () => { $("d-card").innerHTML = cardHtml(cards[i]); sfx.card(); i++; if (i >= cards.length) { clearInterval(drillTimer); setTimeout(() => askDrill(cards), Number($("d-speed").value)); } };
   show(); drillTimer = setInterval(show, Number($("d-speed").value));
 }
 function askDrill(cards) {
@@ -710,62 +1134,97 @@ function askDrill(cards) {
   q.innerHTML = `<b>${cards.length} cards.</b> Running count?<div class="row"><input id="d-ans" type="number" inputmode="numeric" aria-label="Running count"><button class="btn primary" id="d-go">Check</button></div><div id="d-out"></div>`;
   $("d-ans").focus();
   const go = () => {
-    const rc = cards.reduce((s, c) => s + hiLo(c.rank), 0), ok = Number($("d-ans").value) === rc; stats.drills++; if (ok) stats.drillRight++; save();
-    $("d-out").innerHTML = ok ? '<span style="color:var(--good)">Right.</span>' : `<span style="color:var(--bad)">It was ${rc > 0 ? "+" : ""}${rc}.</span> Here is how it ran:`;
-    let run = 0; $("d-seq").replaceChildren(...cards.map((c) => { run += hiLo(c.rank); const s = document.createElement("span"); const t = hiLo(c.rank); s.className = t > 0 ? "p" : t < 0 ? "m" : ""; s.textContent = `${c.rank}${SUIT[c.suit]} ${run > 0 ? "+" : ""}${run}`; return s; }));
+    const rc = cards.reduce((s, c) => s + hiLo(c.rank), 0), good = Number($("d-ans").value) === rc; stats.drills++; if (good) stats.drillRight++; save();
+    $("d-out").innerHTML = good ? '<span style="color:var(--good)">Right.</span>' : `<span style="color:var(--bad)">It was ${signed(rc)}.</span> Here is how it ran:`;
+    let run = 0; $("d-seq").replaceChildren(...cards.map((c) => { run += hiLo(c.rank); const s = document.createElement("span"), t = hiLo(c.rank); s.className = t > 0 ? "p" : t < 0 ? "m" : ""; s.textContent = `${c.rank}${SUIT[c.suit]} ${signed(run)}`; return s; }));
     $("d-go").remove();
   };
-  $("d-go").onclick = go; $("d-ans").addEventListener("keydown", (e) => { if (e.key === "Enter") $("d-go") && go(); });
+  $("d-go").onclick = go; $("d-ans").addEventListener("keydown", (e) => { if (e.key === "Enter" && $("d-go")) go(); });
 }
 
 // ------------------------------------------------------------------ true count drill
 let tcq = null;
 function nextTc() {
-  const rng = cryptoRandom(), half = 1 + Math.floor(rng() * (2 * settings.decks - 1)), decks = half / 2, rc = Math.round((rng() * 2 - 1) * 4 * Math.max(decks, 2));
-  tcq = { rc, decks }; $("t-rc").textContent = (rc > 0 ? "+" : "") + rc; $("t-decks").textContent = decks.toFixed(1);
-  $("t-tray").style.width = `${100 * (1 - decks / settings.decks)}%`; $("t-answer").value = ""; $("t-msg").textContent = ""; $("t-answer").focus();
+  const rng = cryptoRandom(), decks0 = rules().decks, half = 1 + Math.floor(rng() * (2 * decks0 - 1)), decks = half / 2, rc = Math.round((rng() * 2 - 1) * 4 * Math.max(decks, 2));
+  tcq = { rc, decks }; $("t-rc").textContent = signed(rc); $("t-decks").textContent = decks.toFixed(1);
+  $("t-tray").style.width = `${100 * (1 - decks / decks0)}%`; $("t-answer").value = ""; $("t-msg").textContent = ""; $("t-answer").focus();
 }
 function checkTc() {
-  if (!tcq) return; const want = trueCount(tcq.rc, tcq.decks * 52, settings.tcRound), ok = Number($("t-answer").value) === want; stats.tcs++; if (ok) stats.tcRight++; save();
-  $("t-msg").innerHTML = ok ? `<span class="good" style="color:var(--good)">Right: ${want > 0 ? "+" : ""}${want}.</span>` : `<span style="color:var(--bad)">${tcq.rc} / ${tcq.decks.toFixed(1)} = ${(tcq.rc / tcq.decks).toFixed(2)}, ${settings.tcRound === "floor" ? "rounded down" : "toward zero"} is ${want > 0 ? "+" : ""}${want}.</span>`;
+  if (!tcq) return; const want = trueCount(tcq.rc, tcq.decks * 52, settings.tcRound), good = Number($("t-answer").value) === want; stats.tcs++; if (good) stats.tcRight++; save();
+  $("t-msg").innerHTML = good ? `<span style="color:var(--good)">Right: ${signed(want)}.</span>` : `<span style="color:var(--bad)">${tcq.rc} / ${tcq.decks.toFixed(1)} = ${(tcq.rc / tcq.decks).toFixed(2)}, ${settings.tcRound === "floor" ? "rounded down" : "toward zero"} is ${signed(want)}.</span>`;
 }
 
-// ------------------------------------------------------------------ chart
+// ------------------------------------------------------------------ strategy chart
 function drawChart() {
-  const c = chart(settings), up = (u) => (u === 11 ? "A" : u);
-  $("chart-note").textContent = `For ${settings.decks} deck${settings.decks > 1 ? "s" : ""}, dealer ${settings.hitSoft17 ? "hits" : "stands on"} soft 17, ${settings.das ? "" : "no "}double after split, ${settings.lateSurrender ? "" : "no "}late surrender. Worked out from the rules with an infinite deck, so a close call can go the other way in a real shoe.`;
+  const r = rules(), c = chart(r), up = (u) => (u === 11 ? "A" : u);
+  $("chart-note").textContent = `For ${ruleSummary(r)}. Worked out from the rules with an infinite deck, so a close call can go the other way in a real shoe. ${houseText(houseEdge(r))} played this way.`;
   let html = "";
   for (const [name, rows] of [["Hard", c.rows.hard], ["Soft", c.rows.soft], ["Pairs", c.rows.pairs]]) {
     html += `<table class="chart"><thead><tr><th>${name}</th>${c.ups.map((u) => `<th>${up(u)}</th>`).join("")}</tr></thead><tbody>`;
-    for (const r of rows) html += `<tr><th>${r.label}</th>${r.cells.map((x, i) => `<td class="c-${x.code}${x.gap < 0.01 ? " close" : ""}" data-row="${r.label}" data-up="${up(c.ups[i])}" data-ev='${JSON.stringify(Object.fromEntries(Object.entries(x.ev).map(([k, v]) => [k, +v.toFixed(4)])))}'>${x.code}</td>`).join("")}</tr>`;
+    for (const row of rows) html += `<tr><th>${row.label}</th>${row.cells.map((x, i) => `<td class="c-${x.code}${x.gap < 0.01 ? " close" : ""}" data-row="${row.label}" data-up="${up(c.ups[i])}" data-ev='${JSON.stringify(Object.fromEntries(Object.entries(x.ev).map(([k, v]) => [k, +v.toFixed(4)])))}'>${x.code}</td>`).join("")}</tr>`;
     html += "</tbody></table>";
   }
   $("chart").innerHTML = html;
 }
 $("chart").addEventListener("click", (e) => { const td = e.target.closest("td"); if (!td) return; const ev = JSON.parse(td.dataset.ev); $("chart-ev").textContent = `${td.dataset.row} against ${td.dataset.up}: ` + Object.entries(ev).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v >= 0 ? "+" : ""}${v.toFixed(3)}`).join(", ") + " per unit bet"; });
 
-// ------------------------------------------------------------------ rules and stats
-const R = { "r-decks": ["decks", Number], "r-h17": ["hitSoft17", (v) => v === "true"], "r-bj": ["blackjackPays", Number], "r-das": ["das", (v) => v === "true"], "r-sur": ["lateSurrender", (v) => v === "true"], "r-pen": ["penetration", Number], "r-round": ["tcRound", String], "r-quiz": ["quizEvery", Number] };
-for (const [id, [key, parse]] of Object.entries(R)) {
-  $(id).value = String(settings[key]);
-  $(id).onchange = () => { settings[key] = parse($(id).value); if (!["tcRound", "quizEvery"].includes(key)) { shoe = newShoe(); round = null; $("msg").textContent = "New rules, new shoe."; } save(); arc(); drawChart(); render(); drawStats(); };
+// ------------------------------------------------------------------ settings
+const RULE_UI = [
+  ["decks", "Decks", [[1, "1"], [2, "2"], [4, "4"], [6, "6"], [8, "8"]], Number],
+  ["hitSoft17", "Dealer soft 17", [[false, "stands"], [true, "hits"]], (v) => v === "true"],
+  ["blackjackPays", "Blackjack pays", [[1.5, "3 to 2"], [1.2, "6 to 5"], [1, "1 to 1"]], Number],
+  ["holeCard", "Hole card", [[true, "yes: the dealer peeks"], [false, "no (European)"]], (v) => v === "true"],
+  ["doubleOn", "Double on", [["any", "any two cards"], ["9-11", "9, 10 or 11"], ["10-11", "10 or 11"]], String],
+  ["das", "Double after split", [[true, "yes"], [false, "no"]], (v) => v === "true"],
+  ["lateSurrender", "Late surrender", [[true, "yes"], [false, "no"]], (v) => v === "true"],
+  ["maxHands", "Split up to", [[2, "2 hands"], [3, "3 hands"], [4, "4 hands"]], Number],
+  ["resplitAces", "Resplit aces", [[false, "no"], [true, "yes"]], (v) => v === "true"],
+  ["hitSplitAces", "Hit split aces", [[false, "no"], [true, "yes"]], (v) => v === "true"],
+  ["penetration", "Cut card at", [[0.6, "60%"], [0.65, "65%"], [0.75, "75%"], [0.83, "83%"], [0.9, "90%"]], Number],
+  ["csm", "Continuous shuffler", [[false, "no"], [true, "yes"]], (v) => v === "true"],
+];
+function drawSettings() {
+  const r = rules(), cm = careerMode();
+  $("rules").innerHTML = RULE_UI.map(([k, label, opts]) => `<label>${label}<select data-rule="${k}"${cm ? " disabled" : ""}>${opts.map(([v, t]) => `<option value="${v}"${String(r[k]) === String(v) ? " selected" : ""}>${t}</option>`).join("")}</select></label>`).join("");
+  $("rules-note").textContent = cm ? `In a career the table sets the rules (${tableOf().name}). Switch to free play to set your own.` : "Changing a rule starts a fresh shoe. The return below updates as you go.";
+  const e = houseEdge(r);
+  $("edge-now").textContent = houseText(e); $("edge-said").textContent = `${e <= 0 ? `the house keeps ${(-100 * e).toFixed(2)}` : `you win ${(100 * e).toFixed(2)}`} of every 100 bet, played by the book with no count. That is worked out for an infinite deck; a real shoe gives back a little more (measured over 1.5 million rounds: about 0.1% more from six decks, 0.3% from two, 0.5% from one)${r.csm ? "" : ", and counting moves it round to round"}.`;
+  $("tables-note").textContent = cm ? "Tables open as your bankroll grows. Each shows what its rules return a round, by the book." : "In free play the rules below are yours; the career tables are here to copy.";
+  $("tables").innerHTML = TABLES.map((t) => { const open = career.unlocked.includes(t.id) || !cm; return `<button class="tcard${cm && t.id === settings.table ? " on" : ""}" data-table="${t.id}"${open ? "" : " disabled"}><strong>${t.name}</strong><small>${money(t.min)} to ${money(t.max)} · ${t.note}</small><small>${houseText(houseEdge({ ...RULES, ...t.rules }))}${open ? "" : ` · opens at ${money(t.unlock)}`}</small></button>`; }).join("");
+  const set = (id, v) => { $(id).value = String(v); };
+  set("g-mode", settings.mode); set("g-speed", settings.speed); set("g-sound", settings.sound); set("g-coach", settings.coach); set("g-count", settings.countView); set("g-quiz", settings.quizEvery); set("g-round", settings.tcRound); set("p-seats", settings.seats);
+  const n = Number(settings.seats); $("p-me").innerHTML = Array.from({ length: n }, (_, i) => `<option value="${i}"${i === Math.min(settings.mySeat, n - 1) ? " selected" : ""}>${i === 0 ? "first (dealt first)" : i === n - 1 ? "last (third base)" : `seat ${i + 1}`}</option>`).join("");
+  $("styles").innerHTML = Array.from({ length: n - 1 }, (_, i) => `<label>Player ${i + 1}<select data-style="${i}">${Object.entries(STYLES).map(([k, s]) => `<option value="${k}"${settings.styles[i] === k ? " selected" : ""}>${s.label}: ${s.note}</option>`).join("")}</select></label>`).join("");
+  const pc = (a, b) => (b ? `${Math.round((100 * a) / b)}%` : "–");
+  $("stats").innerHTML = [["Rounds", stats.hands], ["Book plays", `${pc(stats.correct, stats.decisions)} of ${stats.decisions}`], ["Hands won", `${pc(stats.won, stats.won + stats.lost)}`], ["Blackjacks", stats.blackjacks], ["Count checks", `${pc(stats.quizRight, stats.quizzes)} of ${stats.quizzes}`], ["Drills", `${pc(stats.drillRight, stats.drills)} of ${stats.drills}`], ["True counts", `${pc(stats.tcRight, stats.tcs)} of ${stats.tcs}`], ["Best bankroll", money(stats.best)], ["Careers", stats.careers], ["Asked to leave", stats.backoffs]].map(([k, v]) => `<div class="stat"><small>${k}</small><b>${v}</b></div>`).join("");
 }
-function drawStats() {
-  const pct = (a, b) => (b ? `${Math.round((100 * a) / b)}%` : "–");
-  $("stats").innerHTML = [["Hands", stats.hands], ["Book plays", `${pct(stats.correct, stats.decisions)} of ${stats.decisions}`], ["Count checks", `${pct(stats.quizRight, stats.quizzes)} of ${stats.quizzes}`], ["Drills", `${pct(stats.drillRight, stats.drills)} of ${stats.drills}`], ["True counts", `${pct(stats.tcRight, stats.tcs)} of ${stats.tcs}`], ["Bankroll", money(stats.bankroll)]].map(([k, v]) => `<div class="stat"><small>${k}</small><b>${v}</b></div>`).join("");
-}
+function rulesChanged() { shoe = newShoe(); round = null; bet = Math.max(limits().min, Math.min(bet, limits().max)); save(); render(); drawChart(); drawSettings(); $("sim-rules").textContent = ruleSummary(rules()); }
+$("rules").addEventListener("change", (e) => { const k = e.target.dataset.rule; if (!k) return; const spec = RULE_UI.find(([x]) => x === k); settings[k] = spec[3](e.target.value); rulesChanged(); $("msg").textContent = "New rules, new shoe."; });
+$("tables").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-table]"); if (!b || b.disabled) return;
+  if (careerMode()) { if ((career.cooldown[b.dataset.table] ?? 0) > 0 || (round && round.phase !== "done") || busy) return; settings.table = b.dataset.table; career.prevBet = 0; }
+  else Object.assign(settings, RULES, TABLES.find((t) => t.id === b.dataset.table).rules);
+  rulesChanged(); $("msg").textContent = careerMode() ? `You sit down at ${tableOf().name}.` : "Rules copied from the table.";
+});
+$("table-pick").onchange = () => { if (busy || (round && round.phase !== "done")) { drawBar(); return; } settings.table = $("table-pick").value; career.prevBet = 0; $("banner").hidden = true; rulesChanged(); $("msg").textContent = `You sit down at ${tableOf().name}: ${tableOf().note}.`; };
+const G = { "g-mode": ["mode", String], "g-speed": ["speed", String], "g-sound": ["sound", (v) => v === "true"], "g-coach": ["coach", (v) => v === "true"], "g-count": ["countView", String], "g-quiz": ["quizEvery", Number], "g-round": ["tcRound", String], "p-seats": ["seats", Number], "p-me": ["mySeat", Number] };
+for (const [id, [k, parse]] of Object.entries(G)) $(id).onchange = () => { if (busy || (round && round.phase !== "done")) { drawSettings(); return; } settings[k] = parse($(id).value); if (k === "mode") { $("banner").hidden = true; rulesChanged(); } else { round = null; save(); render(); drawSettings(); } };
+$("styles").addEventListener("change", (e) => { const i = e.target.dataset.style; if (i == null) return; settings.styles[i] = e.target.value; round = null; save(); render(); });
+$("refill").onclick = () => { stats.freeBank = 1000; save(); render(); drawSettings(); $("reset-msg").textContent = "Free-play bankroll back to 1,000."; };
 let armed = false;
 $("reset").onclick = () => {
-  if (!armed) { armed = true; $("reset").textContent = "Tap again to reset"; $("reset-msg").textContent = ""; setTimeout(() => { armed = false; $("reset").textContent = "Reset bankroll and stats"; }, 4000); return; }
-  armed = false; stats = { bankroll: 1000, hands: 0, decisions: 0, correct: 0, quizzes: 0, quizRight: 0, drills: 0, drillRight: 0, tcs: 0, tcRight: 0 }; save();
-  $("reset").textContent = "Reset bankroll and stats"; $("reset-msg").textContent = "Bankroll back to 1,000, stats cleared."; drawStats(); render();
+  if (!armed) { armed = true; $("reset").textContent = "Tap again to start over"; setTimeout(() => { armed = false; $("reset").textContent = "Start a new career"; }, 4000); return; }
+  armed = false; $("reset").textContent = "Start a new career"; settings.mode = "career"; newCareer(); drawSettings(); $("reset-msg").textContent = `Career ${stats.careers}: ${money(START)} and the two cheap tables.`;
 };
 
 // ------------------------------------------------------------------ wiring
+const VIEWS = ["play", "sim", "drill", "tc", "chart", "settings"];
 function tab(name) {
+  if (!VIEWS.includes(name)) name = "play";
   for (const b of document.querySelectorAll("nav button")) b.setAttribute("aria-selected", String(b.dataset.tab === name));
-  for (const v of ["play", "drill", "tc", "chart", "rules"]) $("view-" + v).hidden = v !== name;
-  if (name === "tc" && !tcq) nextTc(); if (name === "rules") drawStats(); if (name !== "drill") clearInterval(drillTimer);
+  for (const v of VIEWS) $("view-" + v).hidden = v !== name;
+  if (name === "tc" && !tcq) nextTc(); if (name === "settings") drawSettings(); if (name === "chart") drawChart(); if (name === "sim") $("sim-rules").textContent = ruleSummary(rules());
+  if (name !== "drill") clearInterval(drillTimer);
   store.set("tab", name);
 }
 for (const b of document.querySelectorAll("nav button")) b.onclick = () => tab(b.dataset.tab);
@@ -773,15 +1232,18 @@ for (const b of document.querySelectorAll("#actions [data-move]")) b.onclick = (
 $("a-ins-yes").onclick = () => insure(true); $("a-ins-no").onclick = () => insure(false);
 $("deal").onclick = deal; $("d-start").onclick = startDrill; $("t-check").onclick = checkTc; $("t-next").onclick = nextTc;
 $("t-answer").addEventListener("keydown", (e) => { if (e.key === "Enter") checkTc(); });
-$("show-count").onchange = () => { showCount = $("show-count").checked; drawCount(); };
-for (const id of ["s-rc", "s-tc"]) $(id).onclick = () => { $(id).classList.toggle("blur"); };
+for (const id of ["s-rc", "s-tc"]) $(id).onclick = () => { if (settings.countView === "blur") $(id).classList.toggle("blur"); };
 document.addEventListener("keydown", (e) => {
-  if (e.target.closest("input, select") || $("view-play").hidden) return;
+  if (e.target.closest("input, select") || $("view-play").hidden || e.metaKey || e.ctrlKey || e.altKey) return;
   const k = e.key.toLowerCase(), m = { h: "hit", s: "stand", d: "double", p: "split", r: "surrender" }[k];
-  if (m) act(m); else if (k === " " || k === "enter") { e.preventDefault(); if (round?.phase === "insurance") insure(false); else if (!$("deal").disabled) deal(); }
-  else if (k === "i" && round?.phase === "insurance") insure(true);
+  if (m) act(m);
+  else if (k === "i") insure(true); else if (k === "n") insure(false);
+  else if (k === " " || k === "enter") { e.preventDefault(); if (round?.phase === "insurance") insure(false); else deal(); }
 });
-arc(); drawChart(); tab(store.get("tab", "play")); deal();
+if (careerMode() && !career.unlocked.includes(settings.table)) settings.table = "downtown";
+bet = Math.max(limits().min, Math.min(bet, limits().max));
+drawRamp(); render(); tab(store.get("tab", "play"));
+$("msg").textContent = careerMode() ? `${tableOf().name}: ${tableOf().note}. Place a bet and deal.` : "Free play. Place a bet and deal.";
 
 </script>
 </body>

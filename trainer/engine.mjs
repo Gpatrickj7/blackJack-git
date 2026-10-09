@@ -173,6 +173,7 @@ export class Round {
     else if (handTotal(this.hand.cards).total === 21) this.advance(); // a split hand dealt to 21 stands by itself
   }
   finish() { // turn the hole card (or deal the dealer's second), the dealer draws if any hand is still live, then pay
+    this.flipSeq = this.seq; // the cards dealt from here on came after the hole card was turned
     if (this.rules.holeCard) this.seen(this.dealer[1]); else this.dealer.push(this.seen(this.draw()));
     this.holeShown = true;
     const live = this.hands.some((h) => !h.surrendered && handTotal(h.cards).total <= 21 && !isBlackjack(h.cards, h.fromSplit));
