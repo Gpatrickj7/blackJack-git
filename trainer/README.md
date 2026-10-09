@@ -8,8 +8,10 @@ install. Your bankroll, stats and table rules are kept in that browser.
 ## What is in it
 
 - **Play.** A full table of one to seven seats. The other seats are players with their own styles (the book, a
-  counter who bets up with the count, a never-bust player, a copycat who plays like the dealer, a gut-feel player),
-  and their cards count like anyone's. Cards fly from the shoe; the shoe and the discard tray show how deep the deal
+  counter who bets up with the count, a regular who slips one decision in twelve, a novice who slips one in three, a
+  never-bust player, a copycat who plays like the dealer, a gut-feel player), and their cards count like anyone's. Each
+  style's note says what it gives up a hand, measured by the tests over 100,000 paired rounds: the book about 1%, the
+  regular 4%, the copycat 7%, never-bust 8%, gut feel 12% and the novice 13%. Cards fly from the shoe; the shoe and the discard tray show how deep the deal
   is. The **coach** checks every move against basic strategy and shows the numbers behind the call. The running
   count, true count and decks left sit under the table, shown, blurred until you peek, or hidden; every few rounds
   it asks you for the running count. Sound and speed are settings.

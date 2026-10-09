@@ -692,26 +692,30 @@ function chart(rules = RULES) {
 }
 
 // ---- bots.mjs
-// The other players at the table, and how a player bets with the count. Each style is a plain rule; only "book" and
-// "counter" play the computed basic strategy.
+// The other players at the table, and how a player bets with the count. Each style is a plain rule; "book" and "counter"
+// play the computed basic strategy, "regular" and "novice" play it but slip. What each loses a hand is measured in
+// test.mjs (the same 100,000 rounds for every style, the rules' defaults, flat bets, no count).
 
 
 
 const STYLES = {
-  book: { label: "Book", note: "basic strategy, flat bets" },
+  book: { label: "Book", note: "basic strategy, flat bets; loses about 1% of each bet", slip: 0 },
+  regular: { label: "Regular", note: "plays the book but takes the second-best move one decision in twelve; loses about 4%", slip: 1 / 12 },
+  novice: { label: "Novice", note: "knows the basics, takes the second-best move one decision in three; loses about 13%", slip: 1 / 3 },
   counter: { label: "Counter", note: "basic strategy, bets up with the true count, insures at +3" },
-  hunch: { label: "Never-bust", note: "stands on 12 or more, never doubles or splits" },
-  mimic: { label: "Copycat", note: "hits to 17 like the dealer, never doubles or splits" },
-  wild: { label: "Gut feel", note: "splits every pair, doubles 9 to 11, hits to 16, always insures" },
+  hunch: { label: "Never-bust", note: "stands on 12 or more, never doubles or splits; loses about 8%" },
+  mimic: { label: "Copycat", note: "hits to 17 like the dealer, never doubles or splits; loses about 7%" },
+  wild: { label: "Gut feel", note: "splits every pair, doubles 9 to 11, hits to 16, always insures; loses about 12%" },
 };
 
-/** What a player of this style does with the hand in play. */
-function botMove(style, round) {
+/** What a player of this style does with the hand in play. `rnd` is the player's own dice (for the styles that slip). */
+function botMove(style, round, rnd = Math.random) {
   const opts = round.options(), h = round.hand, { total, soft } = handTotal(h.cards), can = (m) => opts.includes(m);
   if (style === "hunch") return can("hit") && total < 12 ? "hit" : "stand";
   if (style === "mimic") return can("hit") && (total < 17 || (total === 17 && soft && round.rules.hitSoft17)) ? "hit" : "stand";
   if (style === "wild") { if (can("split")) return "split"; if (can("double") && total >= 9 && total <= 11) return "double"; return can("hit") && total < 16 ? "hit" : "stand"; }
-  return evaluate(h.cards, round.upcard.rank, opts, round.rules, round.handsOf(h.seat).length)[0][0];
+  const ranked = evaluate(h.cards, round.upcard.rank, opts, round.rules, round.handsOf(h.seat).length);
+  return ranked.length > 1 && rnd() < (STYLES[style]?.slip ?? 0) ? ranked[1][0] : ranked[0][0];
 }
 /** Whether a player of this style takes insurance at this true count. */
 const botInsures = (style, tc) => style === "wild" || (style === "counter" && tc >= 3);
@@ -740,7 +744,7 @@ class Sim {
   constructor({ rules = RULES, rounds = 100000, seed = 1, spread = [[-99, 1]], insureAt = Infinity, wongOut = null, others = [], seat = 0, tcRound = "floor", infinite = false } = {}) {
     this.rules = { ...RULES, ...rules }; this.rounds = rounds; this.spread = spread; this.insureAt = insureAt; this.wongOut = wongOut; this.tcRound = tcRound;
     this.seat = Math.min(seat, others.length); this.styles = others.slice(); this.styles.splice(this.seat, 0, "me");
-    this.shoe = new Shoe({ decks: this.rules.decks, penetration: this.rules.penetration, rng: mulberry32(seed), infinite });
+    this.shoe = new Shoe({ decks: this.rules.decks, penetration: this.rules.penetration, rng: mulberry32(seed), infinite }); this.botRng = mulberry32(seed ^ 0x5bd1e995);
     this.n = 0; this.played = 0; this.net = 0; this.net2 = 0; this.wagered = 0; this.flat = 0; this.flat2 = 0;
     this.byTc = Array.from({ length: TC_MAX - TC_MIN + 1 }, () => ({ n: 0, net: 0, net2: 0 }));
     this.every = Math.max(1, Math.ceil(rounds / 400)); this.trace = [0]; this.peak = 0; this.drawdown = 0; this.results = { blackjack: 0, win: 0, push: 0, lose: 0, bust: 0, surrender: 0 };
@@ -754,7 +758,7 @@ class Sim {
       while (round.phase === "insurance") { const s = this.styles[round.turn]; round.takeInsurance(s === "me" ? !out && tc >= this.insureAt : botInsures(s, tc)); }
       while (round.phase === "player") {
         const s = this.styles[round.turn], h = round.hand;
-        round.act(s === "me" ? evaluate(h.cards, round.upcard.rank, round.options(), r, round.handsOf(h.seat).length)[0][0] : botMove(s, round));
+        round.act(s === "me" ? evaluate(h.cards, round.upcard.rank, round.options(), r, round.handsOf(h.seat).length)[0][0] : botMove(s, round, this.botRng));
       }
       this.played++;
       if (out) continue;
@@ -833,7 +837,7 @@ const wait = (ms) => (ms > 0 ? new Promise((r) => setTimeout(r, ms)) : Promise.r
 const RULE_KEYS = Object.keys(RULES);
 
 // ------------------------------------------------------------------ state
-const DEFAULTS = { ...RULES, tcRound: "floor", quizEvery: 5, mode: "career", speed: "normal", sound: true, coach: true, countView: "blur", seats: 3, mySeat: 1, styles: ["book", "hunch", "counter", "mimic", "wild", "book"], table: "downtown" };
+const DEFAULTS = { ...RULES, tcRound: "floor", quizEvery: 5, mode: "career", speed: "normal", sound: true, coach: true, countView: "blur", seats: 3, mySeat: 1, styles: ["regular", "novice", "counter", "hunch", "book", "wild"], table: "downtown" };
 let settings = { ...DEFAULTS, ...store.get("settings", {}) };
 const freshStats = () => ({ bankroll: START, best: START, careers: 1, freeBank: 1000, hands: 0, decisions: 0, correct: 0, quizzes: 0, quizRight: 0, drills: 0, drillRight: 0, tcs: 0, tcRight: 0, won: 0, lost: 0, blackjacks: 0, backoffs: 0 });
 let stats = { ...freshStats(), ...store.get("stats", {}) };
@@ -850,6 +854,7 @@ const bank = () => (careerMode() ? stats.bankroll : stats.freeBank);
 const addBank = (x) => { if (careerMode()) { stats.bankroll += x; stats.best = Math.max(stats.best, stats.bankroll); } else stats.freeBank += x; };
 const speedMs = () => ({ slow: [480, 750], normal: [260, 420], fast: [110, 160], instant: [0, 0] })[settings.speed] ?? [260, 420];
 
+const botRng = cryptoRandom();
 let shoe = newShoe(), round = null, shown = 0, flipped = false, busy = false, quizDue = false;
 function newShoe() { const r = rules(); return new Shoe({ decks: r.decks, penetration: r.penetration }); }
 const tcNow = () => trueCount(shoe.runningCount, shoe.left, settings.tcRound);
@@ -954,7 +959,7 @@ async function drive() {
   while (round.phase !== "done" && round.styles[round.turn] !== "me") {
     await wait(think);
     const style = round.styles[round.turn];
-    if (round.phase === "insurance") round.takeInsurance(botInsures(style, tcNow())); else round.act(botMove(style, round));
+    if (round.phase === "insurance") round.takeInsurance(botInsures(style, tcNow())); else round.act(botMove(style, round, botRng));
     await reveal();
   }
   busy = false;

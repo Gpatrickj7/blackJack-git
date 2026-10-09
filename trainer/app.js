@@ -17,7 +17,7 @@ const wait = (ms) => (ms > 0 ? new Promise((r) => setTimeout(r, ms)) : Promise.r
 const RULE_KEYS = Object.keys(RULES);
 
 // ------------------------------------------------------------------ state
-const DEFAULTS = { ...RULES, tcRound: "floor", quizEvery: 5, mode: "career", speed: "normal", sound: true, coach: true, countView: "blur", seats: 3, mySeat: 1, styles: ["book", "hunch", "counter", "mimic", "wild", "book"], table: "downtown" };
+const DEFAULTS = { ...RULES, tcRound: "floor", quizEvery: 5, mode: "career", speed: "normal", sound: true, coach: true, countView: "blur", seats: 3, mySeat: 1, styles: ["regular", "novice", "counter", "hunch", "book", "wild"], table: "downtown" };
 let settings = { ...DEFAULTS, ...store.get("settings", {}) };
 const freshStats = () => ({ bankroll: START, best: START, careers: 1, freeBank: 1000, hands: 0, decisions: 0, correct: 0, quizzes: 0, quizRight: 0, drills: 0, drillRight: 0, tcs: 0, tcRight: 0, won: 0, lost: 0, blackjacks: 0, backoffs: 0 });
 let stats = { ...freshStats(), ...store.get("stats", {}) };
@@ -34,6 +34,7 @@ const bank = () => (careerMode() ? stats.bankroll : stats.freeBank);
 const addBank = (x) => { if (careerMode()) { stats.bankroll += x; stats.best = Math.max(stats.best, stats.bankroll); } else stats.freeBank += x; };
 const speedMs = () => ({ slow: [480, 750], normal: [260, 420], fast: [110, 160], instant: [0, 0] })[settings.speed] ?? [260, 420];
 
+const botRng = cryptoRandom();
 let shoe = newShoe(), round = null, shown = 0, flipped = false, busy = false, quizDue = false;
 function newShoe() { const r = rules(); return new Shoe({ decks: r.decks, penetration: r.penetration }); }
 const tcNow = () => trueCount(shoe.runningCount, shoe.left, settings.tcRound);
@@ -138,7 +139,7 @@ async function drive() {
   while (round.phase !== "done" && round.styles[round.turn] !== "me") {
     await wait(think);
     const style = round.styles[round.turn];
-    if (round.phase === "insurance") round.takeInsurance(botInsures(style, tcNow())); else round.act(botMove(style, round));
+    if (round.phase === "insurance") round.takeInsurance(botInsures(style, tcNow())); else round.act(botMove(style, round, botRng));
     await reveal();
   }
   busy = false;

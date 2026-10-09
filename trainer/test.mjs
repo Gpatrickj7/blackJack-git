@@ -101,8 +101,21 @@ ok("without resplitting aces, a split ace dealt an ace just stands", (() => { co
   for (let i = 0; i < N; i++) { const p = points(shoe.draw().rank); if (p === 11) seen.A++; if (p === 10) seen[10]++; }
   ok(`an infinite shoe deals aces 1 in 13 and tens 4 in 13 (${(13 * seen.A / N).toFixed(3)}, ${(13 * seen[10] / N).toFixed(3)}) and never runs out or reaches the cut`, Math.abs(13 * seen.A / N - 1) < 0.03 && Math.abs(13 * seen[10] / N - 4) < 0.05 && !shoe.pastCut && trueCount(5, shoe.left) === 0);
 }
-ok("bot styles: the never-bust player stands on 12, the copycat hits 16", (() => { const r = play(["10", "6", "2", "10"], 10, []); return botMove("hunch", r) === "stand" && botMove("mimic", r) === "hit" && Object.keys(STYLES).length === 5; })());
+ok("bot styles: the never-bust player stands on 12, the copycat hits 16", (() => { const r = play(["10", "6", "2", "10"], 10, []); return botMove("hunch", r) === "stand" && botMove("mimic", r) === "hit" && Object.keys(STYLES).length === 7; })());
 ok("a bet ramp: 1 unit below +2, 2 at +2, 4 at +3, 8 from +5", betFor([[-99, 1], [2, 2], [3, 4], [4, 6], [5, 8]], 1) === 1 && betFor([[-99, 1], [2, 2], [3, 4], [4, 6], [5, 8]], 2) === 2 && betFor([[-99, 1], [2, 2], [3, 4], [4, 6], [5, 8]], 3.9) === 4 && betFor([[-99, 1], [2, 2], [3, 4], [4, 6], [5, 8]], 9) === 8);
+
+console.log("\nTHE OTHER PLAYERS' SKILL");
+{
+  const N = 100000, cost = {};
+  for (const style of Object.keys(STYLES)) {
+    let s = 0; const rnd = mulberry32(77);
+    for (let i = 0; i < N; i++) { const r = new Round(new Shoe({ infinite: true, rng: mulberry32(7919 * i + 1) }), RULES, 1); while (r.phase === "insurance") r.takeInsurance(style === "wild"); while (r.phase === "player") r.act(botMove(style, r, rnd)); s += r.results.net; }
+    cost[style] = -100 * s / N;
+  }
+  const said = (style) => Number(STYLES[style].note.match(/about (\d+)%/)[1]);
+  ok(`the same 100,000 rounds for every style: book ${cost.book.toFixed(2)}%, regular ${cost.regular.toFixed(2)}, copycat ${cost.mimic.toFixed(2)}, never-bust ${cost.hunch.toFixed(2)}, gut feel ${cost.wild.toFixed(2)}, novice ${cost.novice.toFixed(2)} lost a hand`, cost.book < cost.regular && cost.regular < cost.mimic && cost.mimic < cost.hunch && cost.hunch < cost.wild && cost.wild < cost.novice);
+  ok("each style's note says what it loses, to the nearest point but one", Object.keys(STYLES).filter((k) => k !== "counter").every((k) => Math.abs(said(k) - cost[k]) <= 1.5));
+}
 
 console.log("\nTHE HOUSE EDGE, TWO WAYS");
 // The same cards under two sets of rules, round by round (each round's infinite shoe seeded alike), so the difference

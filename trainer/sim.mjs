@@ -16,7 +16,7 @@ export class Sim {
   constructor({ rules = RULES, rounds = 100000, seed = 1, spread = [[-99, 1]], insureAt = Infinity, wongOut = null, others = [], seat = 0, tcRound = "floor", infinite = false } = {}) {
     this.rules = { ...RULES, ...rules }; this.rounds = rounds; this.spread = spread; this.insureAt = insureAt; this.wongOut = wongOut; this.tcRound = tcRound;
     this.seat = Math.min(seat, others.length); this.styles = others.slice(); this.styles.splice(this.seat, 0, "me");
-    this.shoe = new Shoe({ decks: this.rules.decks, penetration: this.rules.penetration, rng: mulberry32(seed), infinite });
+    this.shoe = new Shoe({ decks: this.rules.decks, penetration: this.rules.penetration, rng: mulberry32(seed), infinite }); this.botRng = mulberry32(seed ^ 0x5bd1e995);
     this.n = 0; this.played = 0; this.net = 0; this.net2 = 0; this.wagered = 0; this.flat = 0; this.flat2 = 0;
     this.byTc = Array.from({ length: TC_MAX - TC_MIN + 1 }, () => ({ n: 0, net: 0, net2: 0 }));
     this.every = Math.max(1, Math.ceil(rounds / 400)); this.trace = [0]; this.peak = 0; this.drawdown = 0; this.results = { blackjack: 0, win: 0, push: 0, lose: 0, bust: 0, surrender: 0 };
@@ -30,7 +30,7 @@ export class Sim {
       while (round.phase === "insurance") { const s = this.styles[round.turn]; round.takeInsurance(s === "me" ? !out && tc >= this.insureAt : botInsures(s, tc)); }
       while (round.phase === "player") {
         const s = this.styles[round.turn], h = round.hand;
-        round.act(s === "me" ? evaluate(h.cards, round.upcard.rank, round.options(), r, round.handsOf(h.seat).length)[0][0] : botMove(s, round));
+        round.act(s === "me" ? evaluate(h.cards, round.upcard.rank, round.options(), r, round.handsOf(h.seat).length)[0][0] : botMove(s, round, this.botRng));
       }
       this.played++;
       if (out) continue;
